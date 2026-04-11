@@ -10,6 +10,9 @@ if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
 
 global $wpdb;
 
+// Déprogramme le cron de purge.
+wp_clear_scheduled_hook( 'ppb_weekly_cleanup' );
+
 // Supprime la table de logs.
 $wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}ppb_logs" );
 

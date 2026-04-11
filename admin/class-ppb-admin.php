@@ -159,10 +159,10 @@ class PPB_Admin {
             </td>
             <td><?php echo esc_html( $product['sku'] ); ?></td>
             <td class="ppb-col-price">
-                <?php echo $product['regular_price'] !== null ? esc_html( wc_price( $product['regular_price'] ) ) : '—'; ?>
+                <?php echo $product['regular_price'] !== null ? wp_kses_post( wc_price( $product['regular_price'] ) ) : '—'; ?>
             </td>
             <td class="ppb-col-price">
-                <?php echo $product['sale_price'] !== null ? esc_html( wc_price( $product['sale_price'] ) ) : '—'; ?>
+                <?php echo $product['sale_price'] !== null ? wp_kses_post( wc_price( $product['sale_price'] ) ) : '—'; ?>
             </td>
             <td class="ppb-col-partner">
                 <?php if ( ! $has_variations ) : ?>
@@ -191,10 +191,10 @@ class PPB_Admin {
                     </td>
                     <td><?php echo esc_html( $variation['sku'] ); ?></td>
                     <td class="ppb-col-price">
-                        <?php echo $variation['regular_price'] !== null ? esc_html( wc_price( $variation['regular_price'] ) ) : '—'; ?>
+                        <?php echo $variation['regular_price'] !== null ? wp_kses_post( wc_price( $variation['regular_price'] ) ) : '—'; ?>
                     </td>
                     <td class="ppb-col-price">
-                        <?php echo $variation['sale_price'] !== null ? esc_html( wc_price( $variation['sale_price'] ) ) : '—'; ?>
+                        <?php echo $variation['sale_price'] !== null ? wp_kses_post( wc_price( $variation['sale_price'] ) ) : '—'; ?>
                     </td>
                     <td class="ppb-col-partner">
                         <input

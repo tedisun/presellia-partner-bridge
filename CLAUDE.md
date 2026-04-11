@@ -53,16 +53,30 @@ Convention semver :
 
 ---
 
+## Modularité — règle fondamentale
+
+**L'application doit rester modulaire pour faciliter les mises à jour, la maintenabilité et la scalabilité.**
+
+- Chaque responsabilité fonctionnelle = une classe dans son propre fichier
+- Le loader central `PPB_Plugin` est le seul endroit où les modules sont instanciés
+- Pour ajouter un module : créer le fichier → ajouter `require_once` dans `PPB_Plugin::load_dependencies()` → instancier dans `PPB_Plugin::init_modules()`
+- Les modules `admin/` sont chargés conditionnellement (`is_admin()`) pour ne pas alourdir les requêtes front-end
+- Ne pas faire croître les classes existantes quand une nouvelle responsabilité émerge — créer un nouveau module
+
+---
+
 ## Architecture
 
 ```
-presellia-partner-bridge.php        → bootstrap + activation hooks
+presellia-partner-bridge.php        → bootstrap : constantes, activation hooks, PPB_Plugin::instance()
 includes/
-  class-ppb-activator.php           → CREATE TABLE ppb_logs, options par défaut
+  class-ppb-plugin.php              → loader singleton : require_once + instanciation de tous les modules
+  class-ppb-activator.php           → CREATE TABLE ppb_logs, options par défaut, unschedule cron
   class-ppb-auth.php                → token/cookie, AJAX validate password/revoke
   class-ppb-logger.php              → table ppb_logs, méthodes statiques info/warning/error
   class-ppb-pricing.php             → meta _ppb_partner_price, hook wc_before_calculate_totals, get_catalog()
   class-ppb-portal.php              → shortcode [ppb_portal], AJAX catalog + checkout
+  class-ppb-cron.php                → cron ppb_weekly_cleanup : purge automatique des logs
   api/
     class-ppb-api.php               → REST endpoints ppb/v1/* (auth: X-PPB-API-Key)
 admin/

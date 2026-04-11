@@ -19,9 +19,15 @@ class PPB_Activator {
     }
 
     /**
-     * Vide les règles de réécriture.
+     * Déprogramme le cron et vide les règles de réécriture.
      */
     public static function deactivate(): void {
+        // Déprogramme le cron de purge des logs.
+        $timestamp = wp_next_scheduled( 'ppb_weekly_cleanup' );
+        if ( $timestamp ) {
+            wp_unschedule_event( $timestamp, 'ppb_weekly_cleanup' );
+        }
+
         flush_rewrite_rules();
     }
 
