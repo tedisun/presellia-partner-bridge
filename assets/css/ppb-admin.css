@@ -1,0 +1,119 @@
+/* Presellia Partner Bridge — Admin */
+
+/* ---- Dashboard cards ---- */
+.ppb-dashboard-cards {
+    display: flex;
+    gap: 16px;
+    margin: 16px 0 24px;
+    flex-wrap: wrap;
+}
+.ppb-card {
+    background: #fff;
+    border: 1px solid #e4e7ec;
+    border-radius: 10px;
+    padding: 16px 20px;
+    min-width: 120px;
+    text-align: center;
+    box-shadow: 0 1px 4px rgba(0,0,0,.06);
+}
+.ppb-card-value {
+    display: block;
+    font-size: 2rem;
+    font-weight: 700;
+    line-height: 1.2;
+    color: #1a1a2e;
+}
+.ppb-card-label {
+    display: block;
+    font-size: 12px;
+    color: #777;
+    margin-top: 4px;
+}
+.ppb-card-warning .ppb-card-value { color: #d68910; }
+.ppb-card-error   .ppb-card-value { color: #c0392b; }
+.ppb-card-info    .ppb-card-value { color: #0073aa; }
+
+/* ---- Bulk editor ---- */
+.ppb-bulk-editor h1 { margin-bottom: 6px; }
+
+.ppb-save-bar {
+    position: sticky;
+    top: 32px;
+    z-index: 10;
+    background: #fff;
+    padding: 10px 0;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    border-bottom: 1px solid #e4e7ec;
+    margin-bottom: 12px;
+}
+.ppb-save-bar-bottom {
+    position: static;
+    border-bottom: none;
+    border-top: 1px solid #e4e7ec;
+    margin-top: 12px;
+    padding-top: 14px;
+}
+#ppb-save-status, .ppb-save-status-bottom {
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.ppb-price-table { margin-top: 0; }
+.ppb-price-table th { padding: 10px 12px; white-space: nowrap; }
+.ppb-price-table td { padding: 8px 12px; vertical-align: middle; }
+
+.ppb-col-price  { text-align: right; white-space: nowrap; width: 120px; }
+.ppb-col-partner { width: 160px; }
+
+.ppb-row-parent td { background: #f0f3f6 !important; font-weight: 600; }
+.ppb-row-variation td { background: #fafbfc; }
+.ppb-variation-name { padding-left: 24px !important; color: #555; }
+
+.ppb-price-input {
+    width: 120px;
+    padding: 5px 8px;
+    border: 1px solid #d0d5dd;
+    border-radius: 6px;
+    font-size: 14px;
+    text-align: right;
+}
+.ppb-price-input:focus {
+    border-color: #0073aa;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(0,115,170,.2);
+}
+
+.ppb-badge-variable {
+    display: inline-block;
+    background: #e8f4fd;
+    color: #0073aa;
+    font-size: 11px;
+    padding: 1px 6px;
+    border-radius: 4px;
+    margin-left: 6px;
+    font-weight: 600;
+}
+.ppb-see-variations {
+    color: #aaa;
+    font-size: 12px;
+    font-style: italic;
+}
+
+/* ---- Badges statut ---- */
+.ppb-badge-ok   { color: #27ae60; font-weight: 600; }
+.ppb-badge-warn { color: #d68910; font-weight: 600; }
+
+/* ---- Champ variation produit ---- */
+.ppb-variation-price-row {
+    margin-top: 8px;
+}
+.ppb-variation-price-row label {
+    font-weight: 600;
+    font-size: 12px;
+    color: #555;
+}
+.ppb-variation-price-input {
+    margin-top: 4px;
+}

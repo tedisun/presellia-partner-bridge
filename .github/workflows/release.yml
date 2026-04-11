@@ -1,0 +1,38 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Créer le ZIP de release
+        run: |
+          VERSION=${GITHUB_REF_NAME#v}
+          mkdir -p dist/presellia-partner-bridge
+          rsync -av \
+            --exclude='.git' \
+            --exclude='.github' \
+            --exclude='dist' \
+            --exclude='CLAUDE.md' \
+            --exclude='.gitignore' \
+            . dist/presellia-partner-bridge/
+          cd dist
+          zip -r ../presellia-partner-bridge-${VERSION}.zip presellia-partner-bridge/
+          echo "ZIP_NAME=presellia-partner-bridge-${VERSION}.zip" >> $GITHUB_ENV
+
+      - name: Créer la Release GitHub
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ env.ZIP_NAME }}
+          generate_release_notes: true

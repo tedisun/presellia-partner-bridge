@@ -1,0 +1,235 @@
+/* Presellia Partner Bridge — Portail */
+
+.ppb-portal {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 20px 16px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: 15px;
+    color: #1a1a2e;
+}
+
+/* ---- En-tête ---- */
+.ppb-portal-header {
+    text-align: center;
+    margin-bottom: 32px;
+}
+.ppb-portal-logo {
+    max-height: 60px;
+    margin-bottom: 12px;
+}
+.ppb-portal-title {
+    font-size: 1.6rem;
+    font-weight: 700;
+    margin: 0;
+}
+
+/* ---- Utilitaires ---- */
+.ppb-hidden { display: none !important; }
+
+.ppb-input {
+    padding: 9px 12px;
+    border: 1px solid #d0d5dd;
+    border-radius: 8px;
+    font-size: 15px;
+    outline: none;
+    transition: border-color .15s;
+    box-sizing: border-box;
+}
+.ppb-input:focus { border-color: #0073aa; box-shadow: 0 0 0 3px rgba(0,115,170,.15); }
+
+/* ---- Boutons ---- */
+.ppb-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 9px 18px;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background .15s, opacity .15s;
+}
+.ppb-btn:disabled { opacity: .55; cursor: not-allowed; }
+
+.ppb-btn-primary  { background: #0073aa; color: #fff; }
+.ppb-btn-primary:hover:not(:disabled) { background: #005f8d; }
+
+.ppb-btn-ghost    { background: transparent; color: #555; border: 1px solid #d0d5dd; }
+.ppb-btn-ghost:hover { background: #f5f5f5; }
+
+.ppb-btn-add      { background: #0073aa; color: #fff; padding: 6px 14px; border-radius: 6px; font-size: 13px; }
+.ppb-btn-add:hover:not(:disabled) { background: #005f8d; }
+
+.ppb-btn-remove   { background: transparent; color: #c0392b; border: none; font-size: 18px; line-height: 1; cursor: pointer; padding: 2px 6px; }
+.ppb-btn-remove:hover { color: #922b21; }
+
+.ppb-btn-large    { padding: 12px 28px; font-size: 16px; }
+.ppb-btn-sm       { padding: 5px 12px; font-size: 13px; }
+
+/* ---- Modale mot de passe ---- */
+.ppb-auth-modal {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 300px;
+}
+.ppb-auth-card {
+    background: #fff;
+    border: 1px solid #e4e7ec;
+    border-radius: 12px;
+    padding: 40px 32px;
+    width: 100%;
+    max-width: 400px;
+    box-shadow: 0 4px 24px rgba(0,0,0,.08);
+    text-align: center;
+}
+.ppb-auth-intro {
+    color: #555;
+    margin-bottom: 20px;
+}
+.ppb-auth-form {
+    display: flex;
+    gap: 8px;
+}
+.ppb-auth-form .ppb-input { flex: 1; }
+.ppb-auth-error {
+    color: #c0392b;
+    font-size: 13px;
+    margin-top: 10px;
+}
+
+/* ---- Toolbar ---- */
+.ppb-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+}
+.ppb-search { flex: 1; min-width: 180px; }
+.ppb-toolbar-actions { display: flex; gap: 8px; margin-left: auto; }
+
+/* ---- Tableau catalogue ---- */
+.ppb-catalog-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+.ppb-catalog-table th {
+    background: #f8f9fa;
+    padding: 10px 12px;
+    text-align: left;
+    font-weight: 600;
+    border-bottom: 2px solid #e4e7ec;
+    white-space: nowrap;
+}
+.ppb-catalog-table td {
+    padding: 9px 12px;
+    border-bottom: 1px solid #f0f0f0;
+    vertical-align: middle;
+}
+.ppb-catalog-table tr:hover td { background: #f9fbff; }
+
+.ppb-row-parent td { background: #f4f6f8 !important; font-weight: 600; color: #333; }
+
+.ppb-col-num    { text-align: right; white-space: nowrap; }
+.ppb-col-action { text-align: center; width: 80px; }
+.ppb-col-partner { color: #0073aa; font-weight: 700; }
+
+.ppb-qty-input {
+    width: 60px;
+    padding: 5px 6px;
+    border: 1px solid #d0d5dd;
+    border-radius: 6px;
+    text-align: center;
+    font-size: 14px;
+}
+.ppb-no-price { color: #aaa; font-style: italic; font-size: 12px; }
+
+/* ---- Spinner de chargement ---- */
+.ppb-loading {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 24px;
+    color: #777;
+}
+.ppb-spinner {
+    display: inline-block;
+    width: 18px;
+    height: 18px;
+    border: 2px solid #d0d5dd;
+    border-top-color: #0073aa;
+    border-radius: 50%;
+    animation: ppb-spin .7s linear infinite;
+}
+@keyframes ppb-spin { to { transform: rotate(360deg); } }
+
+.ppb-empty-msg { color: #777; padding: 20px; text-align: center; }
+
+/* ---- Mini-panier ---- */
+.ppb-cart {
+    margin-top: 32px;
+    border: 2px solid #0073aa;
+    border-radius: 12px;
+    overflow: hidden;
+}
+.ppb-cart-title {
+    background: #0073aa;
+    color: #fff;
+    margin: 0;
+    padding: 14px 18px;
+    font-size: 15px;
+    font-weight: 700;
+}
+.ppb-cart-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+.ppb-cart-table td {
+    padding: 9px 14px;
+    border-bottom: 1px solid #f0f0f0;
+    vertical-align: middle;
+}
+.ppb-cart-footer {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 14px 18px;
+    background: #f8f9fa;
+    border-top: 1px solid #e4e7ec;
+    flex-wrap: wrap;
+}
+.ppb-cart-total-label { font-weight: 600; }
+.ppb-cart-total { font-size: 1.2rem; font-weight: 700; color: #0073aa; flex: 1; }
+
+.ppb-qty-sm {
+    width: 55px;
+    padding: 4px 6px;
+    border: 1px solid #d0d5dd;
+    border-radius: 6px;
+    text-align: center;
+    font-size: 13px;
+}
+
+/* ---- Notices ---- */
+.ppb-notice {
+    padding: 14px 18px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+.ppb-notice-error { background: #fde8e8; color: #922b21; border: 1px solid #f1b0b0; }
+
+/* ---- Responsive ---- */
+@media ( max-width: 600px ) {
+    .ppb-auth-form { flex-direction: column; }
+    .ppb-toolbar   { flex-direction: column; align-items: stretch; }
+    .ppb-toolbar-actions { margin-left: 0; }
+    .ppb-catalog-table th:nth-child(2),
+    .ppb-catalog-table td:nth-child(2) { display: none; } /* Masque "Prix public" sur mobile */
+    .ppb-cart-footer { flex-direction: column; align-items: flex-start; }
+    .ppb-checkout-btn { width: 100%; justify-content: center; }
+}
