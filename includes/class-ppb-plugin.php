@@ -67,6 +67,7 @@ class PPB_Plugin {
 
         // --- Modules admin (admin + requêtes AJAX uniquement) ---
         if ( is_admin() ) {
+            require_once PPB_PLUGIN_DIR . 'includes/class-ppb-updater.php';
             require_once PPB_PLUGIN_DIR . 'admin/class-ppb-settings.php';
             require_once PPB_PLUGIN_DIR . 'admin/class-ppb-admin.php';
         }
@@ -88,6 +89,7 @@ class PPB_Plugin {
 
         // Admin (is_admin() inclut les requêtes AJAX — les handlers AJAX admin sont bien chargés).
         if ( is_admin() ) {
+            PPB_Updater::get_instance();
             new PPB_Settings();
             new PPB_Admin();
         }

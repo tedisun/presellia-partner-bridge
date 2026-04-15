@@ -55,11 +55,19 @@ class PPB_Portal {
             true
         );
 
+        // URL de partage (avec token) pour les utilisateurs déjà authentifiés.
+        $share_url = '';
+        if ( PPB_Auth::is_authenticated() && ! empty( $_COOKIE[ PPB_Auth::COOKIE_NAME ] ) ) {
+            $raw_token = sanitize_text_field( wp_unslash( $_COOKIE[ PPB_Auth::COOKIE_NAME ] ) );
+            $share_url = add_query_arg( 't', $raw_token, get_permalink( (int) get_option( 'ppb_portal_page_id' ) ) );
+        }
+
         wp_localize_script( 'ppb-portal', 'ppbPortal', [
             'ajaxUrl'       => admin_url( 'admin-ajax.php' ),
             'nonce'         => wp_create_nonce( 'ppb_portal_nonce' ),
             'isAuth'        => PPB_Auth::is_authenticated() ? '1' : '0',
             'cookieName'    => PPB_Auth::COOKIE_NAME,
+            'shareUrl'      => $share_url,
             'tokenTtlDays'  => (int) get_option( 'ppb_token_ttl', 30 ),
             'currency'      => get_woocommerce_currency_symbol(),
             'checkoutUrl'   => wc_get_checkout_url(),

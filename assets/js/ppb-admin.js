@@ -12,6 +12,7 @@
         bindGenerateApiKey();
         bindRevokeAll();
         bindPurgeLogs();
+        bindCheckUpdate();
     } );
 
     // -------------------------------------------------------------------------
@@ -143,6 +144,72 @@
                 $btn.prop( 'disabled', false );
             } );
         } );
+    }
+
+    // -------------------------------------------------------------------------
+    // Vérification des mises à jour GitHub
+    // -------------------------------------------------------------------------
+
+    function bindCheckUpdate() {
+        $( '#ppb-check-update' ).on( 'click', function () {
+            const $btn    = $( this );
+            const $result = $( '#ppb-update-result' );
+
+            $btn.prop( 'disabled', true ).text( '…' );
+            $result.hide().html( '' );
+
+            $.post( cfg.ajaxUrl, {
+                action: 'ppb_check_update',
+                nonce:  cfg.nonce,
+            } )
+            .done( function ( res ) {
+                if ( ! res.success ) {
+                    $result.html(
+                        '<div class="notice notice-error inline" style="margin:0;"><p>' +
+                        escHtml( res.data.message || 'Erreur inconnue.' ) +
+                        '</p></div>'
+                    ).show();
+                    return;
+                }
+
+                const d = res.data;
+
+                if ( ! d.has_update ) {
+                    $result.html(
+                        '<div class="notice notice-success inline" style="margin:0;"><p>' +
+                        '✓ ' + escHtml( 'Version ' + d.current + ' — déjà à jour.' ) +
+                        '</p></div>'
+                    ).show();
+                    return;
+                }
+
+                $result.html(
+                    '<div class="notice notice-warning inline" style="margin:0; padding:12px 16px;">' +
+                    '<p><strong>Mise à jour disponible : v' + escHtml( d.latest ) + '</strong>' +
+                    ' (installée : v' + escHtml( d.current ) + ')</p>' +
+                    '<p style="margin-bottom:0;">' +
+                    '<a href="' + escHtml( d.update_url ) + '" class="button button-primary" style="margin-right:8px;">' +
+                    'Mettre à jour maintenant' +
+                    '</a>' +
+                    '<a href="' + escHtml( d.changelog_url ) + '" target="_blank" rel="noopener noreferrer" class="button">' +
+                    'Voir le changelog' +
+                    '</a>' +
+                    '</p></div>'
+                ).show();
+            } )
+            .fail( function () {
+                $result.html(
+                    '<div class="notice notice-error inline" style="margin:0;"><p>Erreur réseau. Réessayez.</p></div>'
+                ).show();
+            } )
+            .always( function () {
+                $btn.prop( 'disabled', false ).text( 'Vérifier maintenant' );
+            } );
+        } );
+    }
+
+    function escHtml( str ) {
+        return $( '<div>' ).text( String( str || '' ) ).html();
     }
 
 } )( jQuery );

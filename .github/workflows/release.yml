@@ -1,38 +1,61 @@
 name: Release
 
+# Déclenché quand un tag du type v1.0.1 est poussé sur GitHub
 on:
   push:
     tags:
-      - 'v*.*.*'
+      - 'v[0-9]*.[0-9]*.[0-9]*'
 
 permissions:
-  contents: write
+  contents: write   # requis pour créer des Releases GitHub et uploader des assets
 
 jobs:
-  release:
+  build:
+    name: Build & attach presellia-partner-bridge.zip
     runs-on: ubuntu-latest
 
     steps:
+      # 1. Récupère le dépôt au commit taggé
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Créer le ZIP de release
+      # 2. Extrait le numéro de version du tag (supprime le "v" préfixe)
+      - name: Set version
+        id: version
+        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      # 3. Construit le ZIP avec le bon nom de dossier "presellia-partner-bridge/"
+      #    Exclut les fichiers de développement pour un ZIP propre production.
+      - name: Build presellia-partner-bridge.zip
         run: |
-          VERSION=${GITHUB_REF_NAME#v}
-          mkdir -p dist/presellia-partner-bridge
-          rsync -av \
+          mkdir -p /tmp/build/presellia-partner-bridge
+          rsync -a \
             --exclude='.git' \
             --exclude='.github' \
-            --exclude='dist' \
-            --exclude='CLAUDE.md' \
-            --exclude='.gitignore' \
-            . dist/presellia-partner-bridge/
-          cd dist
-          zip -r ../presellia-partner-bridge-${VERSION}.zip presellia-partner-bridge/
-          echo "ZIP_NAME=presellia-partner-bridge-${VERSION}.zip" >> $GITHUB_ENV
+            --exclude='*.zip' \
+            --exclude='node_modules' \
+            --exclude='.DS_Store' \
+            --exclude='Thumbs.db' \
+            --exclude='*.log' \
+            . /tmp/build/presellia-partner-bridge/
+          cd /tmp/build
+          zip -r presellia-partner-bridge.zip presellia-partner-bridge/
+          echo "ZIP créé : $(du -sh presellia-partner-bridge.zip | cut -f1)"
 
-      - name: Créer la Release GitHub
+      # 4. Crée la Release GitHub et attache le ZIP
+      - name: Create Release & upload asset
         uses: softprops/action-gh-release@v2
         with:
-          files: ${{ env.ZIP_NAME }}
-          generate_release_notes: true
+          name: "Presellia Partner Bridge v${{ steps.version.outputs.version }}"
+          body: |
+            ## Presellia Partner Bridge v${{ steps.version.outputs.version }}
+
+            **Installation / Mise à jour :**
+            - Depuis votre tableau de bord WordPress : *WooCommerce → PPB Réglages → Mise à jour du plugin → Vérifier maintenant*
+            - Ou via *Tableau de bord → Mises à jour* (vérification automatique toutes les 12 h)
+            - Ou téléchargez `presellia-partner-bridge.zip` ci-dessous et installez-le manuellement via *Extensions → Ajouter → Téléverser*.
+          files: /tmp/build/presellia-partner-bridge.zip
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

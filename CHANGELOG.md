@@ -1,5 +1,17 @@
 # Changelog — Presellia Partner Bridge
 
+## [1.1.0] — 2026-04-15
+
+### Ajouté
+- Auto-updater GitHub (`PPB_Updater`) : vérification des nouvelles releases toutes les 12 h, mise à jour en un clic depuis WordPress
+- Bouton "Vérifier maintenant" dans WooCommerce → PPB Réglages → Mise à jour du plugin
+- GitHub Actions workflow `.github/workflows/release.yml` : génération automatique du ZIP propre à chaque tag `vX.Y.Z`
+
+### Corrigé
+- Deux formulaires séparés partageant le même `OPTION_GROUP` → les réglages du portail (page, titre, logo, TTL) pouvaient être effacés après enregistrement ; fusionnés en un seul formulaire
+- Bouton "Partager l'accès" inopérant : le cookie `httponly` empêchait JS de lire le token ; PHP injecte désormais l'URL de partage directement dans `ppbPortal`
+- Champ durée de vie du token : `min` passé de 1 à 0 pour permettre les sessions sans expiration
+
 ## [1.0.0] — 2026-04-11
 
 ### Ajouté

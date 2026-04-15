@@ -14,6 +14,9 @@
 
     const cart = {}; // { "productId_variationId": { product_id, variation_id, name, partner_price, quantity } }
 
+    // URL de partage fournie par PHP (déjà authentifié) ou stockée après connexion AJAX.
+    let shareUrl = cfg.shareUrl || '';
+
     // -------------------------------------------------------------------------
     // Init
     // -------------------------------------------------------------------------
@@ -59,14 +62,9 @@
             } )
             .done( function ( res ) {
                 if ( res.success ) {
-                    // Pose le cookie côté JS pour les navigateurs (l'auth PHP l'a déjà posé via setcookie).
-                    const days    = parseInt( res.data.expires_days || cfg.tokenTtlDays, 10 );
-                    const expires = new Date();
-                    expires.setDate( expires.getDate() + days );
-                    document.cookie = cfg.cookieName + '=' + res.data.token +
-                        '; expires=' + expires.toUTCString() +
-                        '; path=/; SameSite=Lax' +
-                        ( location.protocol === 'https:' ? '; Secure' : '' );
+                    // Stocker l'URL de partage retournée par PHP pour le bouton "Partager l'accès".
+                    // Le cookie httponly est déjà posé par PHP dans la réponse AJAX.
+                    shareUrl = res.data.share_url || '';
 
                     $( '#ppb-auth-modal' ).addClass( 'ppb-hidden' );
                     $( '#ppb-content' ).removeClass( 'ppb-hidden' );
@@ -213,10 +211,8 @@
 
     function bindToolbar() {
         $( '#ppb-copy-link' ).on( 'click', function () {
-            const token = getCookie( cfg.cookieName );
-            if ( ! token ) return;
+            if ( ! shareUrl ) return;
 
-            const shareUrl = location.origin + location.pathname + '?t=' + token;
             copyToClipboard( shareUrl );
 
             const $btn = $( this );

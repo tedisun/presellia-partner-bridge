@@ -29,6 +29,9 @@ class PPB_Settings {
 
         // AJAX : purger les logs.
         add_action( 'wp_ajax_ppb_purge_logs', [ $this, 'ajax_purge_logs' ] );
+
+        // AJAX : vérifier les mises à jour GitHub.
+        add_action( 'wp_ajax_ppb_check_update', [ $this, 'ajax_check_update' ] );
     }
 
     // -------------------------------------------------------------------------
@@ -171,13 +174,23 @@ class PPB_Settings {
                     <tr>
                         <th><?php esc_html_e( 'Durée de vie du token', 'presellia-partner-bridge' ); ?></th>
                         <td>
-                            <input type="number" name="ppb_token_ttl" value="<?php echo esc_attr( get_option( 'ppb_token_ttl', 30 ) ); ?>" min="1" max="365" style="width:80px"> <?php esc_html_e( 'jours', 'presellia-partner-bridge' ); ?>
+                            <input type="number" name="ppb_token_ttl" value="<?php echo esc_attr( get_option( 'ppb_token_ttl', 30 ) ); ?>" min="0" max="365" style="width:80px"> <?php esc_html_e( 'jours (0 = pas d\'expiration)', 'presellia-partner-bridge' ); ?>
                             <p class="description"><?php esc_html_e( 'Durée avant qu\'un partenaire doive re-saisir le mot de passe.', 'presellia-partner-bridge' ); ?></p>
                         </td>
                     </tr>
                 </table>
 
-                <?php submit_button( __( 'Enregistrer', 'presellia-partner-bridge' ) ); ?>
+                <h2><?php esc_html_e( 'Logs', 'presellia-partner-bridge' ); ?></h2>
+                <table class="form-table">
+                    <tr>
+                        <th><?php esc_html_e( 'Rétention des logs', 'presellia-partner-bridge' ); ?></th>
+                        <td>
+                            <input type="number" name="ppb_log_retention" value="<?php echo esc_attr( get_option( 'ppb_log_retention', 90 ) ); ?>" min="7" max="365" style="width:80px"> <?php esc_html_e( 'jours', 'presellia-partner-bridge' ); ?>
+                        </td>
+                    </tr>
+                </table>
+
+                <?php submit_button( __( 'Enregistrer les réglages', 'presellia-partner-bridge' ) ); ?>
             </form>
 
             <!-- Formulaire mot de passe (séparé) -->
@@ -236,24 +249,36 @@ class PPB_Settings {
                 </tr>
             </table>
 
-            <!-- Logs -->
-            <h2><?php esc_html_e( 'Logs', 'presellia-partner-bridge' ); ?></h2>
-            <form method="post" action="options.php" style="display:inline">
-                <?php settings_fields( self::OPTION_GROUP ); ?>
-                <table class="form-table">
-                    <tr>
-                        <th><?php esc_html_e( 'Rétention des logs', 'presellia-partner-bridge' ); ?></th>
-                        <td>
-                            <input type="number" name="ppb_log_retention" value="<?php echo esc_attr( get_option( 'ppb_log_retention', 90 ) ); ?>" min="7" max="365" style="width:80px"> <?php esc_html_e( 'jours', 'presellia-partner-bridge' ); ?>
-                        </td>
-                    </tr>
-                </table>
-                <?php submit_button( __( 'Enregistrer', 'presellia-partner-bridge' ), 'secondary' ); ?>
-            </form>
-            <button id="ppb-purge-logs" class="button button-link-delete" style="margin-left:10px">
+            <!-- Actions logs -->
+            <h2><?php esc_html_e( 'Actions sur les logs', 'presellia-partner-bridge' ); ?></h2>
+            <button id="ppb-purge-logs" class="button button-link-delete">
                 <?php esc_html_e( 'Vider tous les logs maintenant', 'presellia-partner-bridge' ); ?>
             </button>
             <span id="ppb-purge-status"></span>
+
+            <!-- Mise à jour -->
+            <h2><?php esc_html_e( 'Mise à jour du plugin', 'presellia-partner-bridge' ); ?></h2>
+            <table class="form-table">
+                <tr>
+                    <th><?php esc_html_e( 'Version installée', 'presellia-partner-bridge' ); ?></th>
+                    <td>
+                        <strong><?php echo esc_html( PPB_VERSION ); ?></strong>
+                        &nbsp;—&nbsp;
+                        <a href="https://github.com/tedisun/presellia-partner-bridge/releases" target="_blank" rel="noopener noreferrer">
+                            <?php esc_html_e( 'Voir les releases GitHub', 'presellia-partner-bridge' ); ?>
+                        </a>
+                    </td>
+                </tr>
+                <tr>
+                    <th><?php esc_html_e( 'Vérifier les mises à jour', 'presellia-partner-bridge' ); ?></th>
+                    <td>
+                        <button type="button" id="ppb-check-update" class="button">
+                            <?php esc_html_e( 'Vérifier maintenant', 'presellia-partner-bridge' ); ?>
+                        </button>
+                        <div id="ppb-update-result" style="margin-top:12px; display:none;"></div>
+                    </td>
+                </tr>
+            </table>
 
         </div>
         <?php
@@ -307,5 +332,21 @@ class PPB_Settings {
         PPB_Logger::clear_all();
 
         wp_send_json_success( [ 'message' => __( 'Logs vidés.', 'presellia-partner-bridge' ) ] );
+    }
+
+    public function ajax_check_update(): void {
+        check_ajax_referer( 'ppb_admin_nonce', 'nonce' );
+
+        if ( ! current_user_can( 'manage_woocommerce' ) ) {
+            wp_send_json_error( [ 'message' => __( 'Permission refusée.', 'presellia-partner-bridge' ) ], 403 );
+        }
+
+        $status = PPB_Updater::get_instance()->fetch_update_status();
+
+        if ( ! empty( $status['error'] ) ) {
+            wp_send_json_error( [ 'message' => $status['message'] ?? __( 'Erreur inconnue.', 'presellia-partner-bridge' ) ] );
+        }
+
+        wp_send_json_success( $status );
     }
 }
