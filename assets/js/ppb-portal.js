@@ -119,30 +119,54 @@
     }
 
     function renderCatalog( products, $tbody ) {
+        // Regrouper les produits par catégorie (ordre d'apparition conservé).
+        const categories = [];
+        const byCategory = {};
+
         products.forEach( function ( product ) {
-            if ( product.variations && product.variations.length ) {
-                // Ligne parent (visuelle, non-interactive) — colspan 6 avec la colonne miniature
-                const $thumbCell = $( '<td class="ppb-col-thumb">' );
-                if ( product.thumbnail_url ) {
-                    $thumbCell.html( '<img src="' + escAttr( product.thumbnail_url ) + '" class="ppb-product-thumb" alt="">' );
-                }
-
-                const $parentRow = $( '<tr class="ppb-row-parent">' )
-                    .append( $thumbCell )
-                    .append( $( '<td colspan="5">' ).html( '<strong>' + escHtml( product.name ) + '</strong>' ) );
-
-                $tbody.append( $parentRow );
-
-                product.variations.forEach( function ( variation ) {
-                    $tbody.append( buildProductRow( variation, product.name ) );
-                } );
-            } else {
-                $tbody.append( buildProductRow( product, '' ) );
+            const cat = product.category || 'Autres';
+            if ( ! byCategory[ cat ] ) {
+                byCategory[ cat ] = [];
+                categories.push( cat );
             }
+            byCategory[ cat ].push( product );
         } );
+
+        categories.forEach( function ( cat ) {
+            // En-tête de catégorie
+            $tbody.append(
+                $( '<tr class="ppb-row-category">' )
+                    .attr( 'data-category', cat )
+                    .append( $( '<td colspan="6">' ).text( cat ) )
+            );
+
+            byCategory[ cat ].forEach( function ( product ) {
+                if ( product.variations && product.variations.length ) {
+                    const $thumbCell = $( '<td class="ppb-col-thumb">' );
+                    if ( product.thumbnail_url ) {
+                        $thumbCell.html( '<img src="' + escAttr( product.thumbnail_url ) + '" class="ppb-product-thumb" alt="">' );
+                    }
+
+                    const $parentRow = $( '<tr class="ppb-row-parent">' )
+                        .attr( 'data-category', cat )
+                        .append( $thumbCell )
+                        .append( $( '<td colspan="5">' ).html( '<strong>' + escHtml( product.name ) + '</strong>' ) );
+
+                    $tbody.append( $parentRow );
+
+                    product.variations.forEach( function ( variation ) {
+                        $tbody.append( buildProductRow( variation, product.name, cat ) );
+                    } );
+                } else {
+                    $tbody.append( buildProductRow( product, '', cat ) );
+                }
+            } );
+        } );
+
+        renderCategoryFilter( categories );
     }
 
-    function buildProductRow( product, parentName ) {
+    function buildProductRow( product, parentName, category ) {
         const displayName = parentName
             ? escHtml( parentName ) + ' — <em>' + escHtml( product.attributes || product.name ) + '</em>'
             : escHtml( product.name );
@@ -150,7 +174,9 @@
         const publicPrice  = product.sale_price !== null ? product.sale_price : product.regular_price;
         const partnerPrice = product.partner_price;
 
-        const $row = $( '<tr class="ppb-row-product">' ).attr( 'data-name', ( parentName + ' ' + product.name ).toLowerCase() );
+        const $row = $( '<tr class="ppb-row-product">' )
+            .attr( 'data-name', ( parentName + ' ' + product.name ).toLowerCase() )
+            .attr( 'data-category', category || '' );
 
         // Colonne miniature
         const $thumbCell = $( '<td class="ppb-col-thumb">' );
@@ -196,24 +222,52 @@
     }
 
     // -------------------------------------------------------------------------
-    // Recherche
+    // Recherche + filtre catégorie
     // -------------------------------------------------------------------------
 
     function bindSearch() {
-        $( '#ppb-search' ).on( 'input', function () {
-            const q = $( this ).val().toLowerCase().trim();
+        $( '#ppb-search' ).on( 'input', filterCatalog );
+    }
 
-            $( '#ppb-catalog-body tr.ppb-row-product' ).each( function () {
-                const name = $( this ).data( 'name' ) || '';
-                $( this ).toggle( q === '' || name.indexOf( q ) !== -1 );
-            } );
+    function renderCategoryFilter( categories ) {
+        if ( categories.length <= 1 ) return;
 
-            // Cache les lignes parent si toutes leurs variations sont cachées.
-            $( '#ppb-catalog-body tr.ppb-row-parent' ).each( function () {
-                const $siblings = $( this ).nextUntil( '.ppb-row-parent', '.ppb-row-product' );
-                const anyVisible = $siblings.filter( ':visible' ).length > 0;
-                $( this ).toggle( anyVisible );
-            } );
+        const $select = $( '<select id="ppb-cat-filter" class="ppb-input ppb-cat-select">' )
+            .append( $( '<option value="">' ).text( 'Toutes les catégories' ) );
+
+        categories.forEach( function ( cat ) {
+            $select.append( $( '<option>' ).val( cat ).text( cat ) );
+        } );
+
+        $select.on( 'change', filterCatalog );
+        $select.insertBefore( '#ppb-search' );
+    }
+
+    function filterCatalog() {
+        const q   = $( '#ppb-search' ).val().toLowerCase().trim();
+        const cat = $( '#ppb-cat-filter' ).val() || '';
+
+        // Produits
+        $( '#ppb-catalog-body tr.ppb-row-product' ).each( function () {
+            const name    = $( this ).data( 'name' ) || '';
+            const rowCat  = $( this ).attr( 'data-category' ) || '';
+            const matchQ  = q   === '' || name.indexOf( q ) !== -1;
+            const matchC  = cat === '' || rowCat === cat;
+            $( this ).toggle( matchQ && matchC );
+        } );
+
+        // Lignes parent (produits variables) : visible si au moins une variation visible.
+        $( '#ppb-catalog-body tr.ppb-row-parent' ).each( function () {
+            const $siblings = $( this ).nextUntil( '.ppb-row-parent, .ppb-row-category', '.ppb-row-product' );
+            $( this ).toggle( $siblings.filter( ':visible' ).length > 0 );
+        } );
+
+        // En-têtes de catégorie : visible si au moins un produit visible dans cette catégorie.
+        $( '#ppb-catalog-body tr.ppb-row-category' ).each( function () {
+            const rowCat = $( this ).attr( 'data-category' ) || '';
+            const $items = $( '#ppb-catalog-body tr[data-category="' + rowCat + '"]' )
+                .not( '.ppb-row-category' );
+            $( this ).toggle( $items.filter( ':visible' ).length > 0 );
         } );
     }
 

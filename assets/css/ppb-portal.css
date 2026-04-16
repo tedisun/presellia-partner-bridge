@@ -169,6 +169,27 @@
 
 .ppb-empty-msg { color: #777; padding: 20px; text-align: center; }
 
+/* ---- En-têtes de catégorie ---- */
+.ppb-row-category td {
+    background: #eef2f7 !important;
+    color: #0073aa;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    padding: 10px 12px 8px !important;
+    border-top: 2px solid #d5e8f3;
+    border-bottom: 1px solid #d5e8f3 !important;
+}
+.ppb-row-category:first-child td { border-top: none; }
+
+/* ---- Filtre catégorie (toolbar) ---- */
+.ppb-cat-select {
+    min-width: 180px;
+    flex-shrink: 0;
+    background: #fff;
+}
+
 /* ---- Miniatures catalogue ---- */
 .ppb-col-thumb { width: 50px; padding: 5px 8px !important; }
 .ppb-product-thumb {

@@ -1,5 +1,17 @@
 # Changelog — Presellia Partner Bridge
 
+## [1.4.0] — 2026-04-16
+
+### Ajouté
+- Catégorisation du catalogue : les produits sont regroupés par catégorie WooCommerce avec un en-tête visuel par section
+- Filtre déroulant "Toutes les catégories" dans la toolbar (injecté dynamiquement, masqué si une seule catégorie)
+- Recherche textuelle et filtre catégorie combinés : les en-têtes de section se masquent automatiquement si tous leurs produits sont filtrés
+
+### Modifié
+- `PPB_Pricing::get_catalog()` : ajoute le champ `category` (catégorie principale WooCommerce) sur chaque produit
+- `renderCatalog()` JS : refactorisé pour grouper par catégorie avant le rendu
+- `bindSearch()` → `filterCatalog()` : gestion unifiée recherche + filtre catégorie
+
 ## [1.3.0] — 2026-04-16
 
 ### Ajouté

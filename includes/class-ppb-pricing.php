@@ -111,6 +111,10 @@ class PPB_Pricing {
             /** @var WC_Product $product */
             $item = self::format_product( $product );
 
+            // Catégorie principale WooCommerce (pour le regroupement dans le portail).
+            $terms = get_the_terms( $product->get_id(), 'product_cat' );
+            $item['category'] = ( $terms && ! is_wp_error( $terms ) ) ? $terms[0]->name : '';
+
             if ( $product->is_type( 'variable' ) ) {
                 /** @var WC_Product_Variable $product */
                 $item['variations'] = [];
