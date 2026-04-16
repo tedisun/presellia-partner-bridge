@@ -111,9 +111,42 @@ class PPB_Pricing {
             /** @var WC_Product $product */
             $item = self::format_product( $product );
 
-            // Catégorie principale WooCommerce (pour le regroupement dans le portail).
-            $terms = get_the_terms( $product->get_id(), 'product_cat' );
-            $item['category'] = ( $terms && ! is_wp_error( $terms ) ) ? $terms[0]->name : '';
+            // Catégorie parente WooCommerce — menu_order pour le tri personnalisé.
+            // On ne remonte que les catégories racine (parent = 0).
+            $terms          = get_the_terms( $product->get_id(), 'product_cat' );
+            $cat_name       = '';
+            $cat_menu_order = 9999;
+
+            if ( $terms && ! is_wp_error( $terms ) ) {
+                // 1. Cherche une catégorie parente directe parmi les termes du produit.
+                foreach ( $terms as $term ) {
+                    if ( 0 === (int) $term->parent ) {
+                        $order = (int) get_term_meta( $term->term_id, 'order', true );
+                        // Garde la catégorie parente avec le menu_order le plus bas.
+                        if ( '' === $cat_name || $order < $cat_menu_order ) {
+                            $cat_name       = $term->name;
+                            $cat_menu_order = $order;
+                        }
+                    }
+                }
+
+                // 2. Si le produit n'est que dans des sous-catégories, remonte au parent racine.
+                if ( '' === $cat_name ) {
+                    $root = $terms[0];
+                    while ( 0 !== (int) $root->parent ) {
+                        $parent = get_term( (int) $root->parent, 'product_cat' );
+                        if ( ! $parent || is_wp_error( $parent ) ) {
+                            break;
+                        }
+                        $root = $parent;
+                    }
+                    $cat_name       = $root->name;
+                    $cat_menu_order = (int) get_term_meta( $root->term_id, 'order', true );
+                }
+            }
+
+            $item['category']       = $cat_name;
+            $item['category_order'] = $cat_menu_order;
 
             if ( $product->is_type( 'variable' ) ) {
                 /** @var WC_Product_Variable $product */

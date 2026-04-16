@@ -1,5 +1,12 @@
 # Changelog — Presellia Partner Bridge
 
+## [1.6.0] — 2026-04-16
+
+### Modifié
+- Catégories triées par `menu_order` WooCommerce (Produits → Catégories → champ Ordre) au lieu de l'ordre alphabétique
+- Seules les catégories parentes (racine) sont utilisées pour le regroupement — si un produit est uniquement dans une sous-catégorie, le système remonte automatiquement au parent racine
+- `get_catalog()` : ajoute `category_order` (menu_order WC) en plus de `category`
+
 ## [1.5.0] — 2026-04-16
 
 ### Modifié

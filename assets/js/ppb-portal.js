@@ -119,21 +119,24 @@
     }
 
     function renderCatalog( products, $tbody ) {
-        // Regrouper les produits par catégorie (ordre d'apparition conservé).
+        // Regrouper les produits par catégorie en conservant le menu_order WooCommerce.
         const categories = [];
         const byCategory = {};
 
         products.forEach( function ( product ) {
-            const cat = product.category || 'Autres';
+            const cat   = product.category || 'Autres';
+            const order = product.category_order !== undefined ? product.category_order : 9999;
             if ( ! byCategory[ cat ] ) {
-                byCategory[ cat ] = [];
+                byCategory[ cat ] = { products: [], order: order };
                 categories.push( cat );
             }
-            byCategory[ cat ].push( product );
+            byCategory[ cat ].products.push( product );
         } );
 
-        // Tri alphabétique des catégories.
-        categories.sort( function ( a, b ) { return a.localeCompare( b, 'fr' ); } );
+        // Tri par menu_order WooCommerce (défini dans Produits → Catégories).
+        categories.sort( function ( a, b ) {
+            return byCategory[ a ].order - byCategory[ b ].order;
+        } );
 
         categories.forEach( function ( cat ) {
             // En-tête de catégorie
@@ -143,7 +146,7 @@
                     .append( $( '<td colspan="5">' ).text( cat ) )
             );
 
-            byCategory[ cat ].forEach( function ( product ) {
+            byCategory[ cat ].products.forEach( function ( product ) {
                 if ( product.variations && product.variations.length ) {
                     const $thumbCell = $( '<td class="ppb-col-thumb">' );
                     if ( product.thumbnail_url ) {
