@@ -132,12 +132,15 @@
             byCategory[ cat ].push( product );
         } );
 
+        // Tri alphabétique des catégories.
+        categories.sort( function ( a, b ) { return a.localeCompare( b, 'fr' ); } );
+
         categories.forEach( function ( cat ) {
             // En-tête de catégorie
             $tbody.append(
                 $( '<tr class="ppb-row-category">' )
                     .attr( 'data-category', cat )
-                    .append( $( '<td colspan="6">' ).text( cat ) )
+                    .append( $( '<td colspan="5">' ).text( cat ) )
             );
 
             byCategory[ cat ].forEach( function ( product ) {
@@ -150,7 +153,7 @@
                     const $parentRow = $( '<tr class="ppb-row-parent">' )
                         .attr( 'data-category', cat )
                         .append( $thumbCell )
-                        .append( $( '<td colspan="5">' ).html( '<strong>' + escHtml( product.name ) + '</strong>' ) );
+                        .append( $( '<td colspan="4">' ).html( '<strong>' + escHtml( product.name ) + '</strong>' ) );
 
                     $tbody.append( $parentRow );
 
@@ -186,13 +189,16 @@
         $row.append( $thumbCell );
 
         $row.append( $( '<td class="ppb-product-name">' ).html( displayName ) );
-        $row.append( $( '<td class="ppb-col-num ppb-public-price">' ).text(
-            publicPrice !== null ? formatPrice( publicPrice ) : '—'
-        ) );
 
+        // Colonne prix : prix partenaire + prix public barré si différent.
         const $partnerCell = $( '<td class="ppb-col-num ppb-col-partner">' );
         if ( partnerPrice !== null ) {
-            $partnerCell.text( formatPrice( partnerPrice ) );
+            let html = '<span class="ppb-price-partner">' + formatPrice( partnerPrice ) + '</span>';
+            const regularPrice = product.regular_price;
+            if ( regularPrice !== null && regularPrice > partnerPrice ) {
+                html = '<s class="ppb-price-public">' + formatPrice( regularPrice ) + '</s> ' + html;
+            }
+            $partnerCell.html( html );
         } else {
             $partnerCell.html( '<em class="ppb-no-price">' + i18n.noPartnerPrice + '</em>' );
         }
@@ -493,10 +499,10 @@
     // -------------------------------------------------------------------------
 
     function formatPrice( amount ) {
-        return cfg.currency + ' ' + parseFloat( amount ).toLocaleString( 'fr-FR', {
+        return parseFloat( amount ).toLocaleString( 'fr-FR', {
             minimumFractionDigits: 0,
             maximumFractionDigits: 0,
-        } );
+        } ) + '\u00a0' + cfg.currency;
     }
 
     function escHtml( str ) {

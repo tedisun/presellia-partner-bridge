@@ -136,7 +136,16 @@
 
 .ppb-col-num    { text-align: right; white-space: nowrap; }
 .ppb-col-action { text-align: center; width: 80px; }
-.ppb-col-partner { color: #0073aa; font-weight: 700; }
+.ppb-col-partner { color: #0073aa; font-weight: 700; white-space: nowrap; }
+
+.ppb-price-public {
+    color: #aaa;
+    font-weight: 400;
+    font-size: 12px;
+    margin-right: 4px;
+    text-decoration: line-through;
+}
+.ppb-price-partner { color: #0073aa; font-weight: 700; }
 
 .ppb-qty-input {
     width: 60px;
@@ -334,11 +343,9 @@
     .ppb-auth-form { flex-direction: column; }
     .ppb-toolbar   { flex-direction: column; align-items: stretch; }
     .ppb-toolbar-actions { margin-left: 0; }
-    /* Masque "miniature" et "Prix public" sur mobile (colonnes 1 et 3) */
+    /* Masque la colonne miniature sur mobile (colonne 1) */
     .ppb-catalog-table th:nth-child(1),
-    .ppb-catalog-table td:nth-child(1),
-    .ppb-catalog-table th:nth-child(3),
-    .ppb-catalog-table td:nth-child(3) { display: none; }
+    .ppb-catalog-table td:nth-child(1) { display: none; }
     .ppb-cart-bar { padding: 0 12px; gap: 8px; }
     .ppb-cart-bar-sep { display: none; }
     #ppb-cart-bar-total { display: none; }

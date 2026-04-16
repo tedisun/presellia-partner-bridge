@@ -1,5 +1,14 @@
 # Changelog — Presellia Partner Bridge
 
+## [1.5.0] — 2026-04-16
+
+### Modifié
+- Prix public affiché en barré (`<s>`) directement à côté du prix partenaire — colonne "Prix public" séparée supprimée
+- Format monnaie inversé : `4 500 CFA` au lieu de `CFA 4 500` (espace insécable entre chiffre et devise)
+- Catégories triées alphabétiquement (`localeCompare fr`) au lieu de l'ordre de découverte
+- Colspans mis à jour (colonnes passées de 6 à 5 après suppression de la colonne prix public)
+- Responsive : seule la miniature est masquée sur ≤ 600 px (la colonne prix public n'existe plus)
+
 ## [1.4.0] — 2026-04-16
 
 ### Ajouté

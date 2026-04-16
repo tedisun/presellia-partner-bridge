@@ -171,7 +171,6 @@ class PPB_Portal {
                                 <tr>
                                     <th class="ppb-col-thumb"></th>
                                     <th><?php esc_html_e( 'Produit', 'presellia-partner-bridge' ); ?></th>
-                                    <th class="ppb-col-num"><?php esc_html_e( 'Prix public', 'presellia-partner-bridge' ); ?></th>
                                     <th class="ppb-col-num ppb-col-partner"><?php esc_html_e( 'Prix partenaire', 'presellia-partner-bridge' ); ?></th>
                                     <th class="ppb-col-num"><?php esc_html_e( 'Qté', 'presellia-partner-bridge' ); ?></th>
                                     <th class="ppb-col-action"></th>
