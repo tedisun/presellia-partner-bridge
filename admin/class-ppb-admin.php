@@ -124,13 +124,17 @@ class PPB_Admin {
         );
 
         wp_localize_script( 'ppb-admin', 'ppbAdmin', [
-            'ajaxUrl' => admin_url( 'admin-ajax.php' ),
-            'nonce'   => wp_create_nonce( 'ppb_admin_nonce' ),
-            'i18n'    => [
-                'saving'  => __( 'Enregistrement...', 'presellia-partner-bridge' ),
-                'saved'   => __( 'Enregistré !', 'presellia-partner-bridge' ),
-                'error'   => __( 'Erreur lors de la sauvegarde.', 'presellia-partner-bridge' ),
-                'confirm' => __( 'Enregistrer tous les prix partenaires ?', 'presellia-partner-bridge' ),
+            'ajaxUrl'  => admin_url( 'admin-ajax.php' ),
+            'nonce'    => wp_create_nonce( 'ppb_admin_nonce' ),
+            'currency' => get_woocommerce_currency_symbol(),
+            'i18n'     => [
+                'saving'       => __( 'Enregistrement...', 'presellia-partner-bridge' ),
+                'saved'        => __( 'Enregistré !', 'presellia-partner-bridge' ),
+                'error'        => __( 'Erreur lors de la sauvegarde.', 'presellia-partner-bridge' ),
+                'confirm'      => __( 'Enregistrer tous les prix partenaires ?', 'presellia-partner-bridge' ),
+                'addTier'      => __( '+ Ajouter un palier', 'presellia-partner-bridge' ),
+                'tierMinLabel' => __( 'Qté min', 'presellia-partner-bridge' ),
+                'tierPriceLabel' => __( 'Prix', 'presellia-partner-bridge' ),
             ],
         ] );
 
@@ -236,24 +240,42 @@ class PPB_Admin {
             </td>
             <td class="ppb-col-partner">
                 <?php if ( ! $has_variations ) : ?>
-                    <input
-                        type="number"
-                        class="ppb-price-input"
-                        data-product-id="<?php echo esc_attr( $product['id'] ); ?>"
-                        value="<?php echo esc_attr( $product['partner_price'] ?? '' ); ?>"
-                        step="1"
-                        min="0"
-                        placeholder="—"
-                    >
+                    <div class="ppb-price-cell">
+                        <input
+                            type="number"
+                            class="ppb-price-input"
+                            data-product-id="<?php echo esc_attr( $product['id'] ); ?>"
+                            value="<?php echo esc_attr( $product['partner_price'] ?? '' ); ?>"
+                            step="1"
+                            min="0"
+                            placeholder="—"
+                        >
+                        <?php $tiers = PPB_Pricing::get_partner_tiers( (int) $product['id'] ); ?>
+                        <button
+                            type="button"
+                            class="ppb-tiers-btn button-link"
+                            data-product-id="<?php echo esc_attr( $product['id'] ); ?>"
+                        ><?php echo count( $tiers ) > 0
+                            ? esc_html( sprintf( __( '▾ Paliers (%d)', 'presellia-partner-bridge' ), count( $tiers ) ) )
+                            : esc_html__( '▾ Paliers', 'presellia-partner-bridge' ); ?>
+                        </button>
+                    </div>
                 <?php else : ?>
                     <span class="ppb-see-variations"><?php esc_html_e( 'Voir variations ↓', 'presellia-partner-bridge' ); ?></span>
                 <?php endif; ?>
             </td>
         </tr>
         <?php
+        // Ligne éditeur de paliers (masquée par défaut) pour les produits simples.
+        if ( ! $has_variations ) :
+            $tiers = PPB_Pricing::get_partner_tiers( (int) $product['id'] );
+            $this->render_tiers_editor_row( (int) $product['id'], $tiers );
+        endif;
+
         // Lignes de variations.
         if ( $has_variations ) {
             foreach ( $product['variations'] as $variation ) {
+                $var_tiers = PPB_Pricing::get_partner_tiers( (int) $variation['id'] );
                 ?>
                 <tr class="ppb-row-variation">
                     <td class="ppb-variation-name">
@@ -267,20 +289,74 @@ class PPB_Admin {
                         <?php echo $variation['sale_price'] !== null ? wp_kses_post( wc_price( $variation['sale_price'] ) ) : '—'; ?>
                     </td>
                     <td class="ppb-col-partner">
-                        <input
-                            type="number"
-                            class="ppb-price-input"
-                            data-product-id="<?php echo esc_attr( $variation['id'] ); ?>"
-                            value="<?php echo esc_attr( $variation['partner_price'] ?? '' ); ?>"
-                            step="1"
-                            min="0"
-                            placeholder="—"
-                        >
+                        <div class="ppb-price-cell">
+                            <input
+                                type="number"
+                                class="ppb-price-input"
+                                data-product-id="<?php echo esc_attr( $variation['id'] ); ?>"
+                                value="<?php echo esc_attr( $variation['partner_price'] ?? '' ); ?>"
+                                step="1"
+                                min="0"
+                                placeholder="—"
+                            >
+                            <button
+                                type="button"
+                                class="ppb-tiers-btn button-link"
+                                data-product-id="<?php echo esc_attr( $variation['id'] ); ?>"
+                            ><?php echo count( $var_tiers ) > 0
+                                ? esc_html( sprintf( __( '▾ Paliers (%d)', 'presellia-partner-bridge' ), count( $var_tiers ) ) )
+                                : esc_html__( '▾ Paliers', 'presellia-partner-bridge' ); ?>
+                            </button>
+                        </div>
                     </td>
                 </tr>
                 <?php
+                $this->render_tiers_editor_row( (int) $variation['id'], $var_tiers );
             }
         }
+    }
+
+    /**
+     * Affiche la ligne éditeur de paliers (masquée, togglée par JS).
+     *
+     * @param array<int, array{min: int, price: float}> $tiers
+     */
+    private function render_tiers_editor_row( int $product_id, array $tiers ): void {
+        ?>
+        <tr class="ppb-tiers-row" data-for="<?php echo esc_attr( $product_id ); ?>" style="display:none">
+            <td colspan="5" class="ppb-tiers-cell">
+                <div class="ppb-tiers-editor">
+                    <table class="ppb-tiers-table">
+                        <thead>
+                            <tr>
+                                <th><?php esc_html_e( 'Qté min', 'presellia-partner-bridge' ); ?></th>
+                                <th><?php esc_html_e( 'Prix', 'presellia-partner-bridge' ); ?>
+                                    (<?php echo esc_html( get_woocommerce_currency_symbol() ); ?>)</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody class="ppb-tiers-body">
+                            <?php foreach ( $tiers as $tier ) : ?>
+                            <tr class="ppb-tier-row">
+                                <td><input type="number" class="ppb-tier-min" min="1" step="1"
+                                    value="<?php echo esc_attr( $tier['min'] ); ?>"></td>
+                                <td><input type="number" class="ppb-tier-price" min="0" step="1"
+                                    value="<?php echo esc_attr( $tier['price'] ); ?>"></td>
+                                <td><button type="button" class="ppb-tier-delete button-link">×</button></td>
+                            </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                    <button type="button" class="ppb-tier-add button button-secondary">
+                        <?php esc_html_e( '+ Ajouter un palier', 'presellia-partner-bridge' ); ?>
+                    </button>
+                    <span class="ppb-tiers-hint">
+                        <?php esc_html_e( 'Le prix du palier 1 (qté min = 1) remplace le prix plat ci-dessus.', 'presellia-partner-bridge' ); ?>
+                    </span>
+                </div>
+            </td>
+        </tr>
+        <?php
     }
 
     // -------------------------------------------------------------------------
@@ -294,14 +370,39 @@ class PPB_Admin {
             wp_send_json_error( [ 'message' => 'Accès refusé.' ], 403 );
         }
 
-        $prices = isset( $_POST['prices'] ) ? (array) $_POST['prices'] : [];
-        $saved  = 0;
+        $prices     = isset( $_POST['prices'] ) ? (array) $_POST['prices'] : [];
+        $tiers_data = isset( $_POST['tiers'] )  ? (array) $_POST['tiers']  : [];
+        $saved      = 0;
 
+        // Sauvegarde des paliers en premier (set_partner_tiers sync le prix plat).
+        foreach ( $tiers_data as $product_id => $tiers_json ) {
+            $product_id = (int) $product_id;
+            if ( $product_id <= 0 ) {
+                continue;
+            }
+
+            $tiers_json = sanitize_text_field( wp_unslash( (string) $tiers_json ) );
+            $tiers      = json_decode( $tiers_json, true );
+
+            if ( is_array( $tiers ) ) {
+                PPB_Pricing::set_partner_tiers( $product_id, $tiers );
+            } elseif ( '' === $tiers_json ) {
+                delete_post_meta( $product_id, PPB_Pricing::META_KEY_TIERS );
+            }
+        }
+
+        // Sauvegarde des prix plats (ignorés si des paliers viennent d'être sauvegardés).
         foreach ( $prices as $product_id => $price ) {
             $product_id = (int) $product_id;
             $price      = sanitize_text_field( wp_unslash( (string) $price ) );
 
             if ( $product_id <= 0 ) {
+                continue;
+            }
+
+            // Ne pas écraser le prix synchronisé par set_partner_tiers.
+            if ( ! empty( $tiers_data[ $product_id ] ) ) {
+                $saved++;
                 continue;
             }
 

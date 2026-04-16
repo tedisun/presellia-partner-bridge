@@ -1,5 +1,19 @@
 # Changelog — Presellia Partner Bridge
 
+## [1.7.0] — 2026-04-16
+
+### Ajouté
+- **Prix dégressifs (paliers de quantité)** : nouvelle meta `_ppb_partner_tiers` JSON `[{min,price},...]`
+- `PPB_Pricing::get_partner_tiers()`, `set_partner_tiers()`, `get_price_for_quantity()` — logique complète
+- Éditeur de paliers dans le bulk admin : bouton "▾ Paliers" par ligne, tableau qté min / prix / supprimer, + ajouter
+- Portail : bouton "▾ paliers" sur les produits avec plusieurs paliers → ligne de détail avec chips `1–4 · 4 500 CFA`
+- Panier : `apply_partner_prices()` utilise `get_price_for_quantity()` avec la quantité réelle du cart
+
+### Modifié
+- `ajax_bulk_save_prices()` : traite aussi `tiers[]` POST en plus de `prices[]`
+- `format_product()` : inclut `tiers` dans la réponse catalogue (portal + API)
+- Synchronisation automatique : `set_partner_tiers()` met à jour `_ppb_partner_price` avec le premier palier
+
 ## [1.6.0] — 2026-04-16
 
 ### Modifié

@@ -105,6 +105,43 @@
 .ppb-badge-ok   { color: #27ae60; font-weight: 600; }
 .ppb-badge-warn { color: #d68910; font-weight: 600; }
 
+/* ---- Cellule prix avec bouton paliers ---- */
+.ppb-price-cell {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.ppb-tiers-btn {
+    font-size: 11px;
+    color: #0073aa;
+    white-space: nowrap;
+    padding: 0;
+}
+.ppb-tiers-btn:hover { color: #005177; }
+
+/* ---- Ligne éditeur de paliers ---- */
+.ppb-tiers-cell { background: #f9fbff !important; padding: 12px 16px !important; }
+.ppb-tiers-editor { max-width: 400px; }
+.ppb-tiers-table {
+    width: auto;
+    border-collapse: collapse;
+    margin-bottom: 10px;
+    font-size: 13px;
+}
+.ppb-tiers-table th {
+    padding: 5px 10px;
+    background: #eef2f7;
+    text-align: left;
+    font-weight: 600;
+    font-size: 12px;
+}
+.ppb-tiers-table td { padding: 5px 10px; border-bottom: 1px solid #f0f0f0; }
+.ppb-tiers-table input { width: 80px !important; }
+.ppb-tier-delete { font-size: 16px; line-height: 1; padding: 0 4px; color: #c0392b !important; }
+.ppb-tier-add { margin-right: 12px; }
+.ppb-tiers-hint { font-size: 12px; color: #777; font-style: italic; }
+
 /* ---- Champ variation produit ---- */
 .ppb-variation-price-row {
     margin-top: 8px;

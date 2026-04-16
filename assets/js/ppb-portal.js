@@ -30,6 +30,7 @@
         bindToolbar();
         bindCartActions();
         bindCartToggle();
+        bindTiersToggle();
         bindCheckout();
     } );
 
@@ -193,13 +194,20 @@
 
         $row.append( $( '<td class="ppb-product-name">' ).html( displayName ) );
 
-        // Colonne prix : prix partenaire + prix public barré si différent.
+        // Colonne prix : prix partenaire + prix public barré + toggle paliers si définis.
         const $partnerCell = $( '<td class="ppb-col-num ppb-col-partner">' );
         if ( partnerPrice !== null ) {
             let html = '<span class="ppb-price-partner">' + formatPrice( partnerPrice ) + '</span>';
             const regularPrice = product.regular_price;
             if ( regularPrice !== null && regularPrice > partnerPrice ) {
                 html = '<s class="ppb-price-public">' + formatPrice( regularPrice ) + '</s> ' + html;
+            }
+            // Bouton paliers si au moins 2 paliers définis.
+            const tiers = product.tiers || [];
+            if ( tiers.length > 1 ) {
+                const rowKey = escAttr( String( product.id ) + '_' + String( product.variation_id || 0 ) );
+                html += ' <button class="ppb-tiers-toggle" data-key="' + rowKey + '" data-tiers="' +
+                    escAttr( JSON.stringify( tiers ) ) + '">▾ paliers</button>';
             }
             $partnerCell.html( html );
         } else {
@@ -361,6 +369,44 @@
                 }
                 renderCart();
             }
+        } );
+    }
+
+    // -------------------------------------------------------------------------
+    // Paliers de quantité — toggle ligne détail dans le catalogue
+    // -------------------------------------------------------------------------
+
+    function bindTiersToggle() {
+        $( document ).on( 'click', '.ppb-tiers-toggle', function () {
+            const $btn  = $( this );
+            const key   = $btn.data( 'key' );
+            const tiers = $btn.data( 'tiers' );
+
+            const $existingRow = $( '#ppb-tiers-row-' + key );
+
+            if ( $existingRow.length ) {
+                $existingRow.remove();
+                $btn.text( '▾ paliers' );
+                return;
+            }
+
+            $btn.text( '▴ paliers' );
+
+            // Construction de la ligne de détail.
+            let cells = '';
+            tiers.forEach( function ( tier, i ) {
+                const next  = tiers[ i + 1 ];
+                const label = next ? tier.min + '–' + ( next.min - 1 ) : tier.min + '+';
+                cells += '<span class="ppb-tier-chip">' +
+                    '<span class="ppb-tier-qty">' + escHtml( label ) + '</span>' +
+                    '<span class="ppb-tier-price-val">' + formatPrice( tier.price ) + '</span>' +
+                    '</span>';
+            } );
+
+            const $tiersRow = $( '<tr id="ppb-tiers-row-' + key + '" class="ppb-tiers-info-row">' )
+                .append( $( '<td colspan="5" class="ppb-tiers-info-cell">' ).html( cells ) );
+
+            $btn.closest( 'tr' ).after( $tiersRow );
         } );
     }
 

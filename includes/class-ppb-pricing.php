@@ -15,8 +15,11 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 class PPB_Pricing {
 
-    /** Nom de la meta produit. */
+    /** Nom de la meta prix plat. */
     public const META_KEY = '_ppb_partner_price';
+
+    /** Nom de la meta paliers de quantité. */
+    public const META_KEY_TIERS = '_ppb_partner_tiers';
 
     public function __construct() {
         // Application des prix dans le panier/checkout.
@@ -45,14 +48,16 @@ class PPB_Pricing {
 
         foreach ( $cart->get_cart() as $item ) {
             /** @var WC_Product $product */
-            $product    = $item['data'];
-            $lookup_id  = ! empty( $item['variation_id'] ) ? (int) $item['variation_id'] : (int) $item['product_id'];
+            $product   = $item['data'];
+            $lookup_id = ! empty( $item['variation_id'] ) ? (int) $item['variation_id'] : (int) $item['product_id'];
+            $quantity  = (int) $item['quantity'];
 
-            $partner_price = self::get_partner_price( $lookup_id );
+            // Utilise les paliers si définis, sinon le prix plat.
+            $partner_price = self::get_price_for_quantity( $lookup_id, $quantity );
 
-            // Fallback sur le produit parent si la variation n'a pas de prix partenaire.
+            // Fallback sur le produit parent si la variation n'a pas de prix.
             if ( '' === $partner_price && ! empty( $item['variation_id'] ) ) {
-                $partner_price = self::get_partner_price( (int) $item['product_id'] );
+                $partner_price = self::get_price_for_quantity( (int) $item['product_id'], $quantity );
             }
 
             if ( '' !== $partner_price ) {
@@ -75,6 +80,92 @@ class PPB_Pricing {
             ? (string) (float) $value
             : '';
     }
+
+    // -------------------------------------------------------------------------
+    // Paliers de quantité
+    // -------------------------------------------------------------------------
+
+    /**
+     * Retourne les paliers de prix d'un produit, triés par min_qty ASC.
+     * Format : [['min' => int, 'price' => float], ...]
+     *
+     * @return array<int, array{min: int, price: float}>
+     */
+    public static function get_partner_tiers( int $product_id ): array {
+        $raw = get_post_meta( $product_id, self::META_KEY_TIERS, true );
+        if ( ! $raw ) {
+            return [];
+        }
+
+        $decoded = json_decode( $raw, true );
+        if ( ! is_array( $decoded ) ) {
+            return [];
+        }
+
+        $valid = [];
+        foreach ( $decoded as $tier ) {
+            $min   = isset( $tier['min'] )   ? (int)   $tier['min']   : 0;
+            $price = isset( $tier['price'] ) ? (float) $tier['price'] : 0;
+            if ( $min >= 1 && $price > 0 ) {
+                $valid[] = [ 'min' => $min, 'price' => $price ];
+            }
+        }
+
+        usort( $valid, fn( $a, $b ) => $a['min'] - $b['min'] );
+
+        return $valid;
+    }
+
+    /**
+     * Sauvegarde les paliers de prix.
+     * Met aussi à jour le prix plat avec le premier palier pour cohérence.
+     *
+     * @param array<int, array{min: int, price: float}> $tiers
+     */
+    public static function set_partner_tiers( int $product_id, array $tiers ): void {
+        $valid = [];
+        foreach ( $tiers as $tier ) {
+            $min   = isset( $tier['min'] )   ? (int)   $tier['min']   : 0;
+            $price = isset( $tier['price'] ) ? (float) $tier['price'] : 0;
+            if ( $min >= 1 && $price > 0 ) {
+                $valid[] = [ 'min' => $min, 'price' => $price ];
+            }
+        }
+
+        usort( $valid, fn( $a, $b ) => $a['min'] - $b['min'] );
+
+        if ( empty( $valid ) ) {
+            delete_post_meta( $product_id, self::META_KEY_TIERS );
+        } else {
+            update_post_meta( $product_id, self::META_KEY_TIERS, wp_json_encode( $valid ) );
+            // Synchronise le prix plat avec le premier palier (affiché dans le portail).
+            self::set_partner_price( $product_id, (string) $valid[0]['price'] );
+        }
+    }
+
+    /**
+     * Retourne le prix partenaire applicable pour une quantité donnée.
+     * Utilise les paliers si définis, sinon le prix plat.
+     */
+    public static function get_price_for_quantity( int $product_id, int $qty ): string {
+        $tiers = self::get_partner_tiers( $product_id );
+
+        if ( ! empty( $tiers ) ) {
+            $applicable = '';
+            foreach ( $tiers as $tier ) {
+                if ( $qty >= $tier['min'] ) {
+                    $applicable = (string) $tier['price'];
+                }
+            }
+            return $applicable;
+        }
+
+        return self::get_partner_price( $product_id );
+    }
+
+    // -------------------------------------------------------------------------
+    // Prix plat
+    // -------------------------------------------------------------------------
 
     /**
      * Sauvegarde le prix partenaire. Passe '' pour effacer.
@@ -184,6 +275,12 @@ class PPB_Pricing {
         $regular_price = $product->get_regular_price();
         $sale_price    = $product->get_sale_price();
         $partner_price = self::get_partner_price( $id );
+        $tiers         = self::get_partner_tiers( $id );
+
+        // Si des paliers sont définis, le premier palier est le prix de base affiché.
+        if ( ! empty( $tiers ) ) {
+            $partner_price = (string) $tiers[0]['price'];
+        }
 
         // Miniature : image de la variation si définie, sinon celle du produit parent.
         $image_id = $product->get_image_id();
@@ -203,6 +300,7 @@ class PPB_Pricing {
             'regular_price' => $regular_price !== '' ? (float) $regular_price : null,
             'sale_price'    => $sale_price    !== '' ? (float) $sale_price    : null,
             'partner_price' => $partner_price !== '' ? (float) $partner_price : null,
+            'tiers'         => $tiers,
             'stock_status'  => $product->get_stock_status(),
             'manage_stock'  => $product->managing_stock(),
             'stock_qty'     => $product->managing_stock() ? $product->get_stock_quantity() : null,

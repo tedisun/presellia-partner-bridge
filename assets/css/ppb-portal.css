@@ -138,6 +138,36 @@
 .ppb-col-action { text-align: center; width: 80px; }
 .ppb-col-partner { color: #0073aa; font-weight: 700; white-space: nowrap; }
 
+/* ---- Bouton paliers (portail) ---- */
+.ppb-tiers-toggle {
+    background: none;
+    border: none;
+    color: #0073aa;
+    font-size: 11px;
+    cursor: pointer;
+    padding: 0 2px;
+    vertical-align: middle;
+    white-space: nowrap;
+}
+.ppb-tiers-toggle:hover { text-decoration: underline; }
+
+/* ---- Ligne de détail paliers ---- */
+.ppb-tiers-info-row td { background: #f0f8ff !important; padding: 8px 12px !important; }
+.ppb-tiers-info-cell { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.ppb-tier-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: #fff;
+    border: 1px solid #c5dff0;
+    border-radius: 20px;
+    padding: 3px 10px;
+    font-size: 12px;
+    white-space: nowrap;
+}
+.ppb-tier-qty { color: #555; }
+.ppb-tier-price-val { color: #0073aa; font-weight: 700; }
+
 .ppb-price-public {
     color: #aaa;
     font-weight: 400;

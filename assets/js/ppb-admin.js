@@ -9,6 +9,7 @@
 
     $( function () {
         bindBulkSave();
+        bindTiersEditor();
         bindGenerateApiKey();
         bindRevokeAll();
         bindPurgeLogs();
@@ -24,12 +25,32 @@
             const $btn    = $( '#ppb-save-all, .ppb-save-all-btn' );
             const $status = $( '#ppb-save-status, .ppb-save-status-bottom' );
 
+            // Collecte des prix plats.
             const prices = {};
             $( '.ppb-price-input' ).each( function () {
                 const id  = $( this ).data( 'product-id' );
                 const val = $( this ).val().trim();
                 if ( id ) {
                     prices[ id ] = val;
+                }
+            } );
+
+            // Collecte des paliers depuis chaque ligne éditeur.
+            const tiers = {};
+            $( '.ppb-tiers-row' ).each( function () {
+                const id      = $( this ).data( 'for' );
+                const tierArr = [];
+
+                $( this ).find( '.ppb-tier-row' ).each( function () {
+                    const min   = parseInt( $( this ).find( '.ppb-tier-min' ).val(), 10 );
+                    const price = parseFloat( $( this ).find( '.ppb-tier-price' ).val() );
+                    if ( min >= 1 && price > 0 ) {
+                        tierArr.push( { min: min, price: price } );
+                    }
+                } );
+
+                if ( id ) {
+                    tiers[ id ] = JSON.stringify( tierArr );
                 }
             } );
 
@@ -40,6 +61,7 @@
                 action: 'ppb_bulk_save_prices',
                 nonce:  cfg.nonce,
                 prices: prices,
+                tiers:  tiers,
             } )
             .done( function ( res ) {
                 if ( res.success ) {
@@ -56,6 +78,48 @@
                 setTimeout( function () { $status.text( '' ); }, 4000 );
             } );
         } );
+    }
+
+    // -------------------------------------------------------------------------
+    // Éditeur de paliers de quantité
+    // -------------------------------------------------------------------------
+
+    function bindTiersEditor() {
+        // Toggle ouverture/fermeture de la ligne éditeur.
+        $( document ).on( 'click', '.ppb-tiers-btn', function () {
+            const id   = $( this ).data( 'product-id' );
+            const $row = $( '.ppb-tiers-row[data-for="' + id + '"]' );
+            $row.toggle();
+        } );
+
+        // Ajouter un palier vide.
+        $( document ).on( 'click', '.ppb-tier-add', function () {
+            const $tbody = $( this ).closest( '.ppb-tiers-editor' ).find( '.ppb-tiers-body' );
+            $tbody.append( buildTierRow( '', '' ) );
+            $tbody.find( '.ppb-tier-row:last .ppb-tier-min' ).focus();
+        } );
+
+        // Supprimer un palier.
+        $( document ).on( 'click', '.ppb-tier-delete', function () {
+            $( this ).closest( '.ppb-tier-row' ).remove();
+        } );
+
+        // Mise à jour du label du bouton après modification.
+        $( document ).on( 'input', '.ppb-tier-min, .ppb-tier-price', function () {
+            const $editor = $( this ).closest( '.ppb-tiers-row' );
+            const id      = $editor.data( 'for' );
+            const count   = $editor.find( '.ppb-tier-row' ).length;
+            const $btn    = $( '.ppb-tiers-btn[data-product-id="' + id + '"]' );
+            $btn.text( count > 0 ? '▾ Paliers (' + count + ')' : '▾ Paliers' );
+        } );
+    }
+
+    function buildTierRow( min, price ) {
+        return $( '<tr class="ppb-tier-row">' ).html(
+            '<td><input type="number" class="ppb-tier-min" min="1" step="1" value="' + escHtml( String( min ) ) + '" style="width:70px" placeholder="1"></td>' +
+            '<td><input type="number" class="ppb-tier-price" min="0" step="1" value="' + escHtml( String( price ) ) + '" style="width:90px" placeholder="0"></td>' +
+            '<td><button type="button" class="ppb-tier-delete button-link" style="color:#c0392b">×</button></td>'
+        );
     }
 
     // -------------------------------------------------------------------------
