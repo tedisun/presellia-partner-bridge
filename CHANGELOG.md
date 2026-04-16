@@ -1,5 +1,18 @@
 # Changelog — Presellia Partner Bridge
 
+## [1.3.0] — 2026-04-16
+
+### Ajouté
+- Miniatures produit dans le tableau catalogue : colonne image 40×40 px avec fallback sur l'image parent pour les variations
+- Barre panier flottante fixée en bas du viewport (toujours visible pendant le scroll) : compteur articles + total + bouton Commander
+- Panneau détail de la sélection en slide-up au-dessus de la barre (ouverture/fermeture au clic, fermeture en dehors)
+- Animation flash sur la barre à chaque ajout d'article
+- Espace bas de page automatique quand la barre est visible (`ppb-has-cart-bar`)
+
+### Modifié
+- `PPB_Pricing::format_product()` : ajoute `thumbnail_url` dans la réponse catalogue
+- Responsive mobile : masque miniature et prix public sur écrans ≤ 600 px
+
 ## [1.2.0] — 2026-04-16
 
 ### Ajouté

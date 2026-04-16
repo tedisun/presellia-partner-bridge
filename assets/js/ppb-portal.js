@@ -1,6 +1,6 @@
 /**
  * Presellia Partner Bridge — JS Portail
- * Gère : modale mdp, chargement catalogue, mini-panier, checkout.
+ * Gère : modale mdp, chargement catalogue, barre panier sticky, checkout.
  */
 ( function ( $ ) {
     'use strict';
@@ -29,6 +29,7 @@
         bindAuthForm();
         bindToolbar();
         bindCartActions();
+        bindCartToggle();
         bindCheckout();
     } );
 
@@ -62,8 +63,6 @@
             } )
             .done( function ( res ) {
                 if ( res.success ) {
-                    // Stocker l'URL de partage retournée par PHP pour le bouton "Partager l'accès".
-                    // Le cookie httponly est déjà posé par PHP dans la réponse AJAX.
                     shareUrl = res.data.share_url || '';
 
                     $( '#ppb-auth-modal' ).addClass( 'ppb-hidden' );
@@ -122,10 +121,16 @@
     function renderCatalog( products, $tbody ) {
         products.forEach( function ( product ) {
             if ( product.variations && product.variations.length ) {
-                // Ligne parent (visuelle, non-interactive)
-                const $parentRow = $( '<tr class="ppb-row-parent">' ).append(
-                    $( '<td colspan="5">' ).html( '<strong>' + escHtml( product.name ) + '</strong>' )
-                );
+                // Ligne parent (visuelle, non-interactive) — colspan 6 avec la colonne miniature
+                const $thumbCell = $( '<td class="ppb-col-thumb">' );
+                if ( product.thumbnail_url ) {
+                    $thumbCell.html( '<img src="' + escAttr( product.thumbnail_url ) + '" class="ppb-product-thumb" alt="">' );
+                }
+
+                const $parentRow = $( '<tr class="ppb-row-parent">' )
+                    .append( $thumbCell )
+                    .append( $( '<td colspan="5">' ).html( '<strong>' + escHtml( product.name ) + '</strong>' ) );
+
                 $tbody.append( $parentRow );
 
                 product.variations.forEach( function ( variation ) {
@@ -146,6 +151,13 @@
         const partnerPrice = product.partner_price;
 
         const $row = $( '<tr class="ppb-row-product">' ).attr( 'data-name', ( parentName + ' ' + product.name ).toLowerCase() );
+
+        // Colonne miniature
+        const $thumbCell = $( '<td class="ppb-col-thumb">' );
+        if ( product.thumbnail_url ) {
+            $thumbCell.html( '<img src="' + escAttr( product.thumbnail_url ) + '" class="ppb-product-thumb" alt="">' );
+        }
+        $row.append( $thumbCell );
 
         $row.append( $( '<td class="ppb-product-name">' ).html( displayName ) );
         $row.append( $( '<td class="ppb-col-num ppb-public-price">' ).text(
@@ -234,7 +246,7 @@
     }
 
     // -------------------------------------------------------------------------
-    // Mini-panier
+    // Panier — actions (ajouter, retirer, changer qté)
     // -------------------------------------------------------------------------
 
     function bindCartActions() {
@@ -265,6 +277,7 @@
             }
 
             renderCart();
+            flashBar();
         } );
 
         $( document ).on( 'click', '.ppb-cart-remove', function () {
@@ -288,27 +301,61 @@
         } );
     }
 
-    function renderCart() {
-        const $cartSection = $( '#ppb-cart' );
-        const $tbody       = $( '#ppb-cart-body' );
-        const $total       = $( '#ppb-cart-total' );
+    // -------------------------------------------------------------------------
+    // Panier — toggle du panneau détail
+    // -------------------------------------------------------------------------
 
-        const keys = Object.keys( cart );
+    function bindCartToggle() {
+        $( document ).on( 'click', '#ppb-cart-bar-toggle', function () {
+            $( '#ppb-cart-panel' ).toggleClass( 'ppb-panel-open' );
+        } );
+
+        $( document ).on( 'click', '#ppb-cart-panel-close', function () {
+            $( '#ppb-cart-panel' ).removeClass( 'ppb-panel-open' );
+        } );
+
+        // Ferme le panneau si on clique en dehors.
+        $( document ).on( 'click', function ( e ) {
+            if (
+                ! $( e.target ).closest( '#ppb-cart-panel, #ppb-cart-bar-toggle' ).length &&
+                $( '#ppb-cart-panel' ).hasClass( 'ppb-panel-open' )
+            ) {
+                $( '#ppb-cart-panel' ).removeClass( 'ppb-panel-open' );
+            }
+        } );
+    }
+
+    // -------------------------------------------------------------------------
+    // Panier — rendu (barre + panneau)
+    // -------------------------------------------------------------------------
+
+    function renderCart() {
+        const $bar    = $( '#ppb-cart-bar' );
+        const $panel  = $( '#ppb-cart-panel' );
+        const $body   = $( '#ppb-cart-body' );
+        const $label  = $( '#ppb-cart-bar-label' );
+        const $total  = $( '#ppb-cart-bar-total' );
+        const keys    = Object.keys( cart );
 
         if ( keys.length === 0 ) {
-            $cartSection.addClass( 'ppb-hidden' );
+            $bar.addClass( 'ppb-hidden' );
+            $panel.removeClass( 'ppb-panel-open' );
+            $( 'body' ).removeClass( 'ppb-has-cart-bar' );
             return;
         }
 
-        $cartSection.removeClass( 'ppb-hidden' );
-        $tbody.empty();
+        $bar.removeClass( 'ppb-hidden' );
+        $( 'body' ).addClass( 'ppb-has-cart-bar' );
+        $body.empty();
 
-        let total = 0;
+        let total    = 0;
+        let totalQty = 0;
 
         keys.forEach( function ( key ) {
             const item     = cart[ key ];
             const subtotal = item.partner_price * item.quantity;
             total         += subtotal;
+            totalQty      += item.quantity;
 
             const $row = $( '<tr>' )
                 .append( $( '<td>' ).text( item.name ) )
@@ -322,14 +369,25 @@
                 .append(
                     $( '<td>' ).html(
                         '<button class="ppb-btn ppb-btn-remove ppb-cart-remove" data-key="' +
-                        escAttr( key ) + '">' + i18n.removeFromCart + '</button>'
+                        escAttr( key ) + '">×</button>'
                     )
                 );
 
-            $tbody.append( $row );
+            $body.append( $row );
         } );
 
+        const itemLabel = totalQty + ' article' + ( totalQty > 1 ? 's' : '' );
+        $label.text( itemLabel );
         $total.text( formatPrice( total ) );
+    }
+
+    // Animation flash sur la barre quand un article est ajouté.
+    function flashBar() {
+        const $bar = $( '#ppb-cart-bar' );
+        $bar.addClass( 'ppb-bar-flash' );
+        setTimeout( function () {
+            $bar.removeClass( 'ppb-bar-flash' );
+        }, 400 );
     }
 
     // -------------------------------------------------------------------------
@@ -337,7 +395,7 @@
     // -------------------------------------------------------------------------
 
     function bindCheckout() {
-        $( '#ppb-checkout-btn' ).on( 'click', function () {
+        $( document ).on( 'click', '#ppb-checkout-btn', function () {
             const $btn  = $( this );
             const keys  = Object.keys( cart );
 
@@ -393,11 +451,6 @@
 
     function escAttr( str ) {
         return String( str || '' ).replace( /"/g, '&quot;' );
-    }
-
-    function getCookie( name ) {
-        const match = document.cookie.match( new RegExp( '(?:^|;\\s*)' + name + '=([^;]*)' ) );
-        return match ? match[1] : null;
     }
 
     function copyToClipboard( text ) {

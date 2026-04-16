@@ -169,6 +169,7 @@ class PPB_Portal {
                         <table id="ppb-catalog-table" class="ppb-catalog-table ppb-hidden">
                             <thead>
                                 <tr>
+                                    <th class="ppb-col-thumb"></th>
                                     <th><?php esc_html_e( 'Produit', 'presellia-partner-bridge' ); ?></th>
                                     <th class="ppb-col-num"><?php esc_html_e( 'Prix public', 'presellia-partner-bridge' ); ?></th>
                                     <th class="ppb-col-num ppb-col-partner"><?php esc_html_e( 'Prix partenaire', 'presellia-partner-bridge' ); ?></th>
@@ -183,25 +184,37 @@ class PPB_Portal {
                         </p>
                     </div>
 
-                    <!-- Mini-panier -->
-                    <div id="ppb-cart" class="ppb-cart ppb-hidden">
-                        <h3 class="ppb-cart-title"><?php esc_html_e( 'Ma sélection', 'presellia-partner-bridge' ); ?></h3>
-                        <table class="ppb-cart-table">
-                            <tbody id="ppb-cart-body"></tbody>
-                        </table>
-                        <div class="ppb-cart-footer">
-                            <span class="ppb-cart-total-label"><?php esc_html_e( 'Total :', 'presellia-partner-bridge' ); ?></span>
-                            <span id="ppb-cart-total" class="ppb-cart-total">—</span>
-                            <button id="ppb-checkout-btn" class="ppb-btn ppb-btn-primary ppb-btn-large">
-                                <?php esc_html_e( 'Commander', 'presellia-partner-bridge' ); ?>
-                            </button>
+                    <!-- Panneau détail de la sélection (slide-up au-dessus de la barre) -->
+                    <div id="ppb-cart-panel" class="ppb-cart-panel">
+                        <div class="ppb-cart-panel-header">
+                            <span class="ppb-cart-panel-title"><?php esc_html_e( 'Ma sélection', 'presellia-partner-bridge' ); ?></span>
+                            <button id="ppb-cart-panel-close" class="ppb-cart-panel-close" title="<?php esc_attr_e( 'Fermer', 'presellia-partner-bridge' ); ?>">×</button>
+                        </div>
+                        <div class="ppb-cart-panel-body">
+                            <table class="ppb-cart-table">
+                                <tbody id="ppb-cart-body"></tbody>
+                            </table>
                         </div>
                     </div>
 
                 </div><!-- #ppb-content -->
 
             <?php endif; ?>
+
         </div><!-- #ppb-portal -->
+
+        <!-- Barre panier flottante (fixée en bas du viewport) -->
+        <div id="ppb-cart-bar" class="ppb-cart-bar ppb-hidden">
+            <button id="ppb-cart-bar-toggle" class="ppb-cart-bar-summary" title="<?php esc_attr_e( 'Voir la sélection', 'presellia-partner-bridge' ); ?>">
+                <span class="ppb-cart-bar-icon">🛒</span>
+                <strong id="ppb-cart-bar-label"></strong>
+                <span class="ppb-cart-bar-sep">·</span>
+                <span id="ppb-cart-bar-total"></span>
+            </button>
+            <button id="ppb-checkout-btn" class="ppb-btn ppb-btn-primary">
+                <?php esc_html_e( 'Commander', 'presellia-partner-bridge' ); ?> →
+            </button>
+        </div>
         <?php
         return ob_get_clean();
     }

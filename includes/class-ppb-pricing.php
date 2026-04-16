@@ -148,6 +148,16 @@ class PPB_Pricing {
         $sale_price    = $product->get_sale_price();
         $partner_price = self::get_partner_price( $id );
 
+        // Miniature : image de la variation si définie, sinon celle du produit parent.
+        $image_id = $product->get_image_id();
+        if ( ! $image_id && $product instanceof WC_Product_Variation ) {
+            $parent = wc_get_product( $product->get_parent_id() );
+            if ( $parent ) {
+                $image_id = $parent->get_image_id();
+            }
+        }
+        $thumbnail_url = $image_id ? wp_get_attachment_image_url( $image_id, 'thumbnail' ) : '';
+
         $data = [
             'id'            => $id,
             'name'          => $product->get_name(),
@@ -159,6 +169,7 @@ class PPB_Pricing {
             'stock_status'  => $product->get_stock_status(),
             'manage_stock'  => $product->managing_stock(),
             'stock_qty'     => $product->managing_stock() ? $product->get_stock_quantity() : null,
+            'thumbnail_url' => $thumbnail_url ?: '',
         ];
 
         // Pour les variations : ajouter les attributs formatés.

@@ -169,42 +169,121 @@
 
 .ppb-empty-msg { color: #777; padding: 20px; text-align: center; }
 
-/* ---- Mini-panier ---- */
-.ppb-cart {
-    margin-top: 32px;
-    border: 2px solid #0073aa;
-    border-radius: 12px;
-    overflow: hidden;
+/* ---- Miniatures catalogue ---- */
+.ppb-col-thumb { width: 50px; padding: 5px 8px !important; }
+.ppb-product-thumb {
+    width: 40px;
+    height: 40px;
+    object-fit: cover;
+    border-radius: 5px;
+    display: block;
 }
-.ppb-cart-title {
-    background: #0073aa;
+
+/* ---- Barre panier flottante ---- */
+.ppb-cart-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 0 20px;
+    height: 60px;
+    background: #1a1a2e;
+    box-shadow: 0 -2px 16px rgba(0,0,0,.25);
+}
+.ppb-cart-bar.ppb-hidden { display: none !important; }
+
+.ppb-cart-bar-summary {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 1;
+    background: none;
+    border: none;
     color: #fff;
-    margin: 0;
-    padding: 14px 18px;
     font-size: 15px;
-    font-weight: 700;
+    cursor: pointer;
+    padding: 0;
+    text-align: left;
 }
+.ppb-cart-bar-summary:hover { opacity: .85; }
+.ppb-cart-bar-icon { font-size: 1.2rem; }
+.ppb-cart-bar-summary strong { font-weight: 700; }
+.ppb-cart-bar-sep { opacity: .5; }
+#ppb-cart-bar-total { color: #7ec8e3; font-weight: 700; }
+
+.ppb-cart-bar #ppb-checkout-btn {
+    flex-shrink: 0;
+    white-space: nowrap;
+}
+
+/* Flash d'ajout */
+@keyframes ppb-bar-flash {
+    0%   { background: #005f8d; }
+    50%  { background: #0073aa; }
+    100% { background: #1a1a2e; }
+}
+.ppb-bar-flash { animation: ppb-bar-flash .4s ease; }
+
+/* ---- Panneau détail de la sélection ---- */
+.ppb-cart-panel {
+    position: fixed;
+    bottom: 60px; /* = hauteur de la barre */
+    left: 0;
+    right: 0;
+    z-index: 9998;
+    max-height: 50vh;
+    overflow-y: auto;
+    background: #fff;
+    border-top: 2px solid #0073aa;
+    box-shadow: 0 -4px 20px rgba(0,0,0,.18);
+    transform: translateY(100%);
+    transition: transform .25s ease;
+    pointer-events: none;
+}
+.ppb-cart-panel.ppb-panel-open {
+    transform: translateY(0);
+    pointer-events: auto;
+}
+
+.ppb-cart-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 20px;
+    background: #f8f9fa;
+    border-bottom: 1px solid #e4e7ec;
+    position: sticky;
+    top: 0;
+}
+.ppb-cart-panel-title { font-weight: 700; font-size: 14px; }
+.ppb-cart-panel-close {
+    background: none;
+    border: none;
+    font-size: 20px;
+    line-height: 1;
+    cursor: pointer;
+    color: #777;
+    padding: 0 4px;
+}
+.ppb-cart-panel-close:hover { color: #1a1a2e; }
+
+.ppb-cart-panel-body { padding: 0 0 4px; }
+
 .ppb-cart-table {
     width: 100%;
     border-collapse: collapse;
     font-size: 14px;
 }
 .ppb-cart-table td {
-    padding: 9px 14px;
+    padding: 9px 20px;
     border-bottom: 1px solid #f0f0f0;
     vertical-align: middle;
 }
-.ppb-cart-footer {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    padding: 14px 18px;
-    background: #f8f9fa;
-    border-top: 1px solid #e4e7ec;
-    flex-wrap: wrap;
-}
-.ppb-cart-total-label { font-weight: 600; }
-.ppb-cart-total { font-size: 1.2rem; font-weight: 700; color: #0073aa; flex: 1; }
+.ppb-cart-table tr:last-child td { border-bottom: none; }
 
 .ppb-qty-sm {
     width: 55px;
@@ -213,6 +292,12 @@
     border-radius: 6px;
     text-align: center;
     font-size: 13px;
+}
+
+/* Espace bas de page quand la barre est visible */
+.ppb-has-cart-bar .ppb-portal,
+.ppb-has-cart-bar #ppb-portal {
+    padding-bottom: 76px;
 }
 
 /* ---- Notices ---- */
@@ -228,8 +313,13 @@
     .ppb-auth-form { flex-direction: column; }
     .ppb-toolbar   { flex-direction: column; align-items: stretch; }
     .ppb-toolbar-actions { margin-left: 0; }
-    .ppb-catalog-table th:nth-child(2),
-    .ppb-catalog-table td:nth-child(2) { display: none; } /* Masque "Prix public" sur mobile */
-    .ppb-cart-footer { flex-direction: column; align-items: flex-start; }
-    .ppb-checkout-btn { width: 100%; justify-content: center; }
+    /* Masque "miniature" et "Prix public" sur mobile (colonnes 1 et 3) */
+    .ppb-catalog-table th:nth-child(1),
+    .ppb-catalog-table td:nth-child(1),
+    .ppb-catalog-table th:nth-child(3),
+    .ppb-catalog-table td:nth-child(3) { display: none; }
+    .ppb-cart-bar { padding: 0 12px; gap: 8px; }
+    .ppb-cart-bar-sep { display: none; }
+    #ppb-cart-bar-total { display: none; }
+    .ppb-cart-table td { padding: 8px 12px; }
 }
