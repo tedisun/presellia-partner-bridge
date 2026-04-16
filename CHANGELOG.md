@@ -1,5 +1,14 @@
 # Changelog — Presellia Partner Bridge
 
+## [1.2.0] — 2026-04-16
+
+### Ajouté
+- Page "Guide de démarrage" (WooCommerce → PPB Guide) : checklist dynamique basée sur l'état réel de la configuration, explication du flux complet, concepts clés, documentation des endpoints API
+- Notice admin contextuelle sur les pages PPB si la configuration est incomplète (mot de passe manquant, page portail non sélectionnée)
+- Bannière d'aide inline sur la page "Prix partenaires" expliquant comment utiliser l'éditeur
+- Lien "Portail actif" sur la page de réglages quand le portail est configuré
+- Styles CSS dédiés pour le guide (`.ppb-gs-*`, `.ppb-inline-help`)
+
 ## [1.1.0] — 2026-04-15
 
 ### Ajouté

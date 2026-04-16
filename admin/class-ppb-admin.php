@@ -16,6 +16,7 @@ class PPB_Admin {
     public function __construct() {
         add_action( 'admin_menu',            [ $this, 'register_menu' ] );
         add_action( 'admin_enqueue_scripts', [ $this, 'enqueue_scripts' ] );
+        add_action( 'admin_notices',         [ $this, 'setup_incomplete_notice' ] );
 
         // AJAX bulk save.
         add_action( 'wp_ajax_ppb_bulk_save_prices', [ $this, 'ajax_bulk_save_prices' ] );
@@ -34,6 +35,15 @@ class PPB_Admin {
     public function register_menu(): void {
         add_submenu_page(
             'woocommerce',
+            __( 'PPB — Guide de démarrage', 'presellia-partner-bridge' ),
+            __( 'PPB Guide', 'presellia-partner-bridge' ),
+            'manage_woocommerce',
+            'ppb-guide',
+            [ $this, 'render_guide' ]
+        );
+
+        add_submenu_page(
+            'woocommerce',
             __( 'Prix partenaires', 'presellia-partner-bridge' ),
             __( 'Prix partenaires', 'presellia-partner-bridge' ),
             'manage_woocommerce',
@@ -42,12 +52,64 @@ class PPB_Admin {
         );
     }
 
+    public function render_guide(): void {
+        if ( ! current_user_can( 'manage_woocommerce' ) ) {
+            wp_die( esc_html__( 'Accès refusé.', 'presellia-partner-bridge' ) );
+        }
+        require_once PPB_PLUGIN_DIR . 'admin/page-ppb-guide.php';
+    }
+
+    /**
+     * Affiche une notice admin si le plugin n'est pas entièrement configuré.
+     * Visible uniquement sur les pages PPB et le tableau de bord WooCommerce.
+     */
+    public function setup_incomplete_notice(): void {
+        $screen = get_current_screen();
+        if ( ! $screen ) {
+            return;
+        }
+
+        $ppb_screens = [
+            'woocommerce_page_ppb-guide',
+            'woocommerce_page_ppb-prices',
+            'woocommerce_page_ppb-settings',
+        ];
+
+        if ( ! in_array( $screen->id, $ppb_screens, true ) ) {
+            return;
+        }
+
+        $has_password   = (bool) get_option( 'ppb_portal_password_hash', '' );
+        $portal_page_id = (int)  get_option( 'ppb_portal_page_id', 0 );
+        $portal_page_ok = $portal_page_id > 0 && get_post( $portal_page_id );
+
+        if ( $has_password && $portal_page_ok ) {
+            return; // Tout est configuré, pas de notice.
+        }
+
+        $guide_url = admin_url( 'admin.php?page=ppb-guide' );
+        $missing   = [];
+
+        if ( ! $has_password ) {
+            $missing[] = __( 'mot de passe partenaire non défini', 'presellia-partner-bridge' );
+        }
+        if ( ! $portal_page_ok ) {
+            $missing[] = __( 'page portail non configurée', 'presellia-partner-bridge' );
+        }
+
+        echo '<div class="notice notice-warning">';
+        echo '<p><strong>Presellia Partner Bridge</strong> — ';
+        echo esc_html( implode( ', ', $missing ) ) . '. ';
+        echo '<a href="' . esc_url( $guide_url ) . '">' . esc_html__( 'Voir le guide de démarrage →', 'presellia-partner-bridge' ) . '</a>';
+        echo '</p></div>';
+    }
+
     // -------------------------------------------------------------------------
     // Scripts admin
     // -------------------------------------------------------------------------
 
     public function enqueue_scripts( string $hook ): void {
-        $allowed_hooks = [ 'woocommerce_page_ppb-prices', 'woocommerce_page_ppb-settings' ];
+        $allowed_hooks = [ 'woocommerce_page_ppb-prices', 'woocommerce_page_ppb-settings', 'woocommerce_page_ppb-guide' ];
 
         if ( ! in_array( $hook, $allowed_hooks, true ) && 'post.php' !== $hook && 'post-new.php' !== $hook ) {
             return;
@@ -94,9 +156,17 @@ class PPB_Admin {
         ?>
         <div class="wrap ppb-bulk-editor">
             <h1><?php esc_html_e( 'Prix partenaires — Édition en masse', 'presellia-partner-bridge' ); ?></h1>
-            <p class="description">
-                <?php esc_html_e( 'Les prix WC et promo sont affichés à titre informatif. Seul le champ "Prix partenaire" est modifiable.', 'presellia-partner-bridge' ); ?>
-            </p>
+
+            <div class="ppb-inline-help">
+                <p>
+                    <strong><?php esc_html_e( 'Comment utiliser cet éditeur :', 'presellia-partner-bridge' ); ?></strong>
+                    <?php esc_html_e( 'Saisissez un prix dans la colonne "Prix partenaire" pour chaque produit que vous souhaitez rendre commandable. Laissez le champ vide pour utiliser le prix public WooCommerce (le produit sera visible mais le bouton "Ajouter" sera désactivé sur le portail). Cliquez "Enregistrer tout" quand vous avez terminé.', 'presellia-partner-bridge' ); ?>
+                </p>
+                <p style="margin-bottom:0;">
+                    💡 <?php esc_html_e( 'Vous pouvez aussi modifier le prix partenaire directement depuis la fiche produit (metabox dans la colonne de droite) ou depuis l\'onglet Variations pour les produits variables.', 'presellia-partner-bridge' ); ?>
+                    &nbsp;<a href="<?php echo esc_url( admin_url( 'admin.php?page=ppb-guide' ) ); ?>"><?php esc_html_e( 'En savoir plus →', 'presellia-partner-bridge' ); ?></a>
+                </p>
+            </div>
 
             <div id="ppb-save-bar" class="ppb-save-bar">
                 <button id="ppb-save-all" class="button button-primary button-large">

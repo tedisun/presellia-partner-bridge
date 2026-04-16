@@ -117,3 +117,173 @@
 .ppb-variation-price-input {
     margin-top: 4px;
 }
+
+/* ============================================================
+   GUIDE DE DÉMARRAGE
+   ============================================================ */
+
+.ppb-guide-wrap { max-width: 900px; }
+
+/* Hero */
+.ppb-gs-hero {
+    background: linear-gradient(135deg, #0073aa 0%, #005177 100%);
+    color: #fff;
+    border-radius: 10px;
+    padding: 28px 32px;
+    margin: 16px 0 24px;
+}
+.ppb-gs-hero h2 {
+    color: #fff;
+    font-size: 1.3rem;
+    margin: 0 0 10px;
+}
+.ppb-gs-hero p {
+    margin: 0;
+    opacity: .9;
+    font-size: .95rem;
+    line-height: 1.6;
+}
+
+/* Cartes */
+.ppb-gs-card {
+    background: #fff;
+    border: 1px solid #e4e7ec;
+    border-radius: 10px;
+    padding: 24px 28px;
+    margin-bottom: 20px;
+    box-shadow: 0 1px 4px rgba(0,0,0,.05);
+}
+.ppb-gs-card h2 {
+    font-size: 1.1rem;
+    margin: 0 0 16px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #f0f3f6;
+}
+.ppb-gs-card h3 {
+    font-size: .9rem;
+    margin: 18px 0 4px;
+    color: #1a1a2e;
+}
+.ppb-gs-card p {
+    font-size: .875rem;
+    color: #3c434a;
+    margin: 0 0 8px;
+    line-height: 1.6;
+}
+
+/* Checklist */
+.ppb-gs-checklist {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+.ppb-gs-checklist li {
+    display: flex;
+    gap: 14px;
+    padding: 14px 0;
+    border-bottom: 1px solid #f0f3f6;
+    align-items: flex-start;
+}
+.ppb-gs-checklist li:last-child { border-bottom: none; }
+.ppb-gs-checklist li div { flex: 1; }
+.ppb-gs-checklist li strong { font-size: .95rem; display: block; margin-bottom: 4px; }
+.ppb-gs-checklist li p { margin: 4px 0 0; font-size: .85rem; color: #555; }
+
+.ppb-check-icon {
+    font-size: 1.1rem;
+    font-weight: 700;
+    width: 24px;
+    flex-shrink: 0;
+    padding-top: 2px;
+    text-align: center;
+}
+.ppb-done .ppb-check-icon   { color: #27ae60; }
+.ppb-todo .ppb-check-icon   { color: #aaa; }
+.ppb-neutral .ppb-check-icon { color: #0073aa; }
+.ppb-done strong a           { color: #27ae60; }
+
+.ppb-gs-tip {
+    background: #f0f8ff;
+    border-left: 3px solid #0073aa;
+    border-radius: 0 4px 4px 0;
+    padding: 8px 12px !important;
+    margin-top: 8px !important;
+    font-size: .83rem !important;
+    color: #0073aa !important;
+}
+
+/* Flux étapes */
+.ppb-gs-flow { display: flex; flex-direction: column; gap: 0; }
+.ppb-gs-flow-step {
+    display: flex;
+    gap: 16px;
+    padding: 14px 0;
+    border-bottom: 1px solid #f0f3f6;
+    align-items: flex-start;
+}
+.ppb-gs-flow-step:last-child { border-bottom: none; }
+.ppb-gs-step-num {
+    background: #0073aa;
+    color: #fff;
+    font-weight: 700;
+    font-size: .85rem;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+.ppb-gs-flow-step strong { font-size: .9rem; display: block; margin-bottom: 4px; }
+.ppb-gs-flow-step p { font-size: .85rem; color: #555; margin: 0; line-height: 1.5; }
+
+/* Liste simple */
+.ppb-gs-list {
+    margin: 8px 0 12px 16px;
+    padding: 0;
+}
+.ppb-gs-list li {
+    font-size: .875rem;
+    color: #3c434a;
+    margin-bottom: 8px;
+    line-height: 1.5;
+}
+
+/* Tableau API */
+.ppb-gs-api-table { margin-top: 12px; font-size: .85rem; }
+.ppb-gs-api-table th { padding: 8px 12px; background: #f9fafb; }
+.ppb-gs-api-table td { padding: 7px 12px; vertical-align: middle; }
+.ppb-gs-api-table code { font-size: .8rem; }
+
+/* Notice d'aide inline (sur settings et prices pages) */
+.ppb-inline-help {
+    background: #f0f8ff;
+    border: 1px solid #c5dff0;
+    border-left: 4px solid #0073aa;
+    border-radius: 0 6px 6px 0;
+    padding: 12px 16px;
+    margin: 0 0 20px;
+    font-size: .875rem;
+    line-height: 1.6;
+    color: #1a1a2e;
+    max-width: 900px;
+}
+.ppb-inline-help p { margin: 0 0 6px; }
+.ppb-inline-help p:last-child { margin-bottom: 0; }
+.ppb-inline-help--info {
+    background: #f0fff4;
+    border-color: #b2dfdb;
+    border-left-color: #27ae60;
+}
+
+/* Notice bannière setup incomplet */
+.ppb-gs-notice { margin: 16px 0; max-width: 900px; }
+
+/* Responsive */
+@media (max-width: 782px) {
+    .ppb-gs-hero { padding: 20px; }
+    .ppb-gs-card { padding: 16px; }
+    .ppb-gs-flow-step, .ppb-gs-checklist li { flex-direction: column; gap: 8px; }
+}

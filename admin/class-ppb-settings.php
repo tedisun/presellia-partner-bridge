@@ -102,9 +102,23 @@ class PPB_Settings {
         $api_key       = get_option( 'ppb_api_key', '' );
         $has_password  = (bool) get_option( 'ppb_portal_password_hash', '' );
 
+        $portal_page_id = (int) get_option( 'ppb_portal_page_id', 0 );
+        $portal_url     = $portal_page_id > 0 && get_post( $portal_page_id )
+            ? get_permalink( $portal_page_id )
+            : '';
+
         ?>
         <div class="wrap">
             <h1><?php esc_html_e( 'Presellia Partner Bridge — Réglages', 'presellia-partner-bridge' ); ?></h1>
+
+            <?php if ( $portal_url ) : ?>
+            <div class="ppb-inline-help ppb-inline-help--info">
+                <strong><?php esc_html_e( 'Portail actif :', 'presellia-partner-bridge' ); ?></strong>
+                <a href="<?php echo esc_url( $portal_url ); ?>" target="_blank"><?php echo esc_html( $portal_url ); ?></a>
+                &nbsp;—&nbsp;
+                <a href="<?php echo esc_url( admin_url( 'admin.php?page=ppb-guide' ) ); ?>"><?php esc_html_e( 'Guide de démarrage', 'presellia-partner-bridge' ); ?></a>
+            </div>
+            <?php endif; ?>
 
             <?php if ( $password_updated ) : ?>
                 <div class="notice notice-success"><p><?php esc_html_e( 'Mot de passe mis à jour. Tous les tokens actifs ont été révoqués.', 'presellia-partner-bridge' ); ?></p></div>
