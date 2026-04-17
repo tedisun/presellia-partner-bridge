@@ -138,6 +138,40 @@
 .ppb-col-action { text-align: center; width: 80px; }
 .ppb-col-partner { color: #0073aa; font-weight: 700; white-space: nowrap; }
 
+/* ---- Bannière prix dégressifs ---- */
+.ppb-tiers-banner {
+    background: #fffbea;
+    border: 1px solid #f0d060;
+    border-left: 4px solid #f0a500;
+    border-radius: 0 6px 6px 0;
+    padding: 10px 16px;
+    margin-bottom: 14px;
+    font-size: 13px;
+    line-height: 1.6;
+    color: #5a4200;
+}
+
+/* ---- Badges de stock ---- */
+.ppb-stock-badge {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 4px;
+    white-space: nowrap;
+}
+.ppb-stock-out {
+    background: #fde8e8;
+    color: #922b21;
+    border: 1px solid #f1b0b0;
+}
+.ppb-stock-backorder {
+    background: #fff3cd;
+    color: #7a5700;
+    border: 1px solid #fce08a;
+}
+.ppb-col-action { min-width: 90px; }
+
 /* ---- Bouton paliers (portail) ---- */
 .ppb-tiers-toggle {
     background: none;

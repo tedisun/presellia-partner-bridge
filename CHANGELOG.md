@@ -1,5 +1,12 @@
 # Changelog — Presellia Partner Bridge
 
+## [1.8.0] — 2026-04-17
+
+### Ajouté
+- Bannière explicative prix dégressifs au-dessus du catalogue (affichée uniquement si au moins un produit/variation possède des paliers)
+- Badge "Rupture" (rouge) sur les produits `outofstock` — bouton "Ajouter" désactivé
+- Badge "Sur commande" (orange) sur les produits `onbackorder` — bouton "Ajouter" conservé
+
 ## [1.7.0] — 2026-04-16
 
 ### Ajouté

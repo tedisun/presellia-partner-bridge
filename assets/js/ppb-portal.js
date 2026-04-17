@@ -111,12 +111,36 @@
             $tbody.empty();
             renderCatalog( res.data.catalog, $tbody );
             $table.removeClass( 'ppb-hidden' );
+            maybeShowTiersBanner( res.data.catalog );
             bindSearch();
         } )
         .fail( function () {
             $loading.hide();
             $empty.text( 'Erreur de chargement.' ).removeClass( 'ppb-hidden' );
         } );
+    }
+
+    function maybeShowTiersBanner( products ) {
+        // Affiche une bannière explicative uniquement si au moins un produit a des paliers.
+        const hasTiers = products.some( function ( p ) {
+            if ( p.tiers && p.tiers.length > 1 ) return true;
+            if ( p.variations ) {
+                return p.variations.some( function ( v ) { return v.tiers && v.tiers.length > 1; } );
+            }
+            return false;
+        } );
+
+        if ( ! hasTiers ) return;
+        if ( $( '#ppb-tiers-banner' ).length ) return;
+
+        $( '#ppb-catalog-table' ).before(
+            $( '<div id="ppb-tiers-banner" class="ppb-tiers-banner">' ).html(
+                '💡 <strong>Prix dégressifs disponibles.</strong> ' +
+                'Certains produits proposent des remises automatiques selon la quantité commandée. ' +
+                'Cliquez sur <em>▾ paliers</em> pour voir les seuils — le bon prix s\'applique ' +
+                'automatiquement dans votre commande.'
+            )
+        );
     }
 
     function renderCatalog( products, $tbody ) {
@@ -221,7 +245,10 @@
             .attr( 'data-variation-id', product.variation_id || 0 );
         $row.append( $( '<td class="ppb-col-num">' ).append( $qty ) );
 
-        // Bouton ajouter
+        // Bouton ajouter + gestion du stock
+        const outOfStock  = product.stock_status === 'outofstock';
+        const backorder   = product.stock_status === 'onbackorder';
+
         const $addBtn = $( '<button class="ppb-btn ppb-btn-add ppb-btn-sm">' )
             .text( i18n.addToCart )
             .attr( 'data-product-id', product.id )
@@ -231,9 +258,22 @@
 
         if ( partnerPrice === null ) {
             $addBtn.prop( 'disabled', true ).attr( 'title', i18n.noPartnerPrice );
+        } else if ( outOfStock ) {
+            $addBtn.prop( 'disabled', true );
         }
 
-        $row.append( $( '<td class="ppb-col-action">' ).append( $addBtn ) );
+        const $actionCell = $( '<td class="ppb-col-action">' );
+
+        if ( outOfStock ) {
+            $actionCell.append( $( '<span class="ppb-stock-badge ppb-stock-out">' ).text( 'Rupture' ) );
+        } else if ( backorder ) {
+            $actionCell.append( $( '<span class="ppb-stock-badge ppb-stock-backorder">' ).text( 'Sur commande' ) );
+            $actionCell.append( $addBtn );
+        } else {
+            $actionCell.append( $addBtn );
+        }
+
+        $row.append( $actionCell );
 
         return $row;
     }
