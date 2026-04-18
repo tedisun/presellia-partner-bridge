@@ -1,5 +1,17 @@
 # Changelog — Presellia Partner Bridge
 
+## [1.9.0] — 2026-04-17
+
+### Ajouté
+- Lien "Demander l'accès" sous le formulaire de connexion — configurable dans WooCommerce → PPB Réglages (URL du formulaire de partenariat) ; masqué si vide
+- Vidéo tutoriel activable via les réglages (URL YouTube/Loom/Vimeo) — bouton "📹 Tutoriel" dans la toolbar ; panel iframe 16:9 responsive toggleable
+- Nom de produit cliquable dans le catalogue partenaire (nouvel onglet vers la fiche WooCommerce)
+- Affichage du stock disponible dans le catalogue (`X en stock`) sur les produits avec gestion du stock activée
+
+### Modifié
+- `format_product()` : ajoute `permalink` dans la réponse catalogue
+- Réglages : 2 nouveaux champs "Lien demande d'accès" et "Vidéo tutoriel"
+
 ## [1.8.0] — 2026-04-17
 
 ### Ajouté

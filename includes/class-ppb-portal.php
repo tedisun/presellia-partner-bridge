@@ -63,14 +63,15 @@ class PPB_Portal {
         }
 
         wp_localize_script( 'ppb-portal', 'ppbPortal', [
-            'ajaxUrl'       => admin_url( 'admin-ajax.php' ),
-            'nonce'         => wp_create_nonce( 'ppb_portal_nonce' ),
-            'isAuth'        => PPB_Auth::is_authenticated() ? '1' : '0',
-            'cookieName'    => PPB_Auth::COOKIE_NAME,
-            'shareUrl'      => $share_url,
-            'tokenTtlDays'  => (int) get_option( 'ppb_token_ttl', 30 ),
-            'currency'      => get_woocommerce_currency_symbol(),
-            'checkoutUrl'   => wc_get_checkout_url(),
+            'ajaxUrl'           => admin_url( 'admin-ajax.php' ),
+            'nonce'             => wp_create_nonce( 'ppb_portal_nonce' ),
+            'isAuth'            => PPB_Auth::is_authenticated() ? '1' : '0',
+            'cookieName'        => PPB_Auth::COOKIE_NAME,
+            'shareUrl'          => $share_url,
+            'tokenTtlDays'      => (int) get_option( 'ppb_token_ttl', 30 ),
+            'currency'          => get_woocommerce_currency_symbol(),
+            'checkoutUrl'       => wc_get_checkout_url(),
+            'tutorialVideoUrl'  => esc_url( get_option( 'ppb_tutorial_video_url', '' ) ),
             'i18n'          => [
                 'passwordPlaceholder' => __( 'Mot de passe partenaire', 'presellia-partner-bridge' ),
                 'passwordSubmit'      => __( 'Accéder', 'presellia-partner-bridge' ),
@@ -141,6 +142,17 @@ class PPB_Portal {
                             </button>
                         </div>
                         <p id="ppb-auth-error" class="ppb-auth-error ppb-hidden"></p>
+                        <?php
+                        $access_url = get_option( 'ppb_access_request_url', '' );
+                        if ( $access_url ) :
+                        ?>
+                        <p class="ppb-auth-request">
+                            <?php esc_html_e( 'Pas encore partenaire ?', 'presellia-partner-bridge' ); ?>
+                            <a href="<?php echo esc_url( $access_url ); ?>">
+                                <?php esc_html_e( 'Demander l\'accès', 'presellia-partner-bridge' ); ?>
+                            </a>
+                        </p>
+                        <?php endif; ?>
                     </div>
                 </div>
 

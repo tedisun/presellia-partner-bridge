@@ -198,15 +198,34 @@
     }
 
     function buildProductRow( product, parentName, category ) {
-        const displayName = parentName
-            ? escHtml( parentName ) + ' — <em>' + escHtml( product.attributes || product.name ) + '</em>'
-            : escHtml( product.name );
+        const rawName = parentName
+            ? parentName + ' — ' + ( product.attributes || product.name )
+            : product.name;
+
+        // Nom affiché : lien vers la fiche produit si permalink disponible.
+        let nameHtml;
+        if ( parentName ) {
+            nameHtml = escHtml( parentName ) + ' — <em>' + escHtml( product.attributes || product.name ) + '</em>';
+        } else {
+            nameHtml = escHtml( product.name );
+        }
+        if ( product.permalink ) {
+            nameHtml = '<a href="' + escAttr( product.permalink ) + '" target="_blank" rel="noopener" class="ppb-product-link">' + nameHtml + '</a>';
+        }
+
+        // Affichage du stock si géré et disponible.
+        if ( product.manage_stock && product.stock_qty !== null && product.stock_status !== 'outofstock' ) {
+            const qty = parseInt( product.stock_qty, 10 );
+            if ( qty >= 0 ) {
+                nameHtml += ' <small class="ppb-stock-qty">' + qty + ' en stock</small>';
+            }
+        }
 
         const publicPrice  = product.sale_price !== null ? product.sale_price : product.regular_price;
         const partnerPrice = product.partner_price;
 
         const $row = $( '<tr class="ppb-row-product">' )
-            .attr( 'data-name', ( parentName + ' ' + product.name ).toLowerCase() )
+            .attr( 'data-name', rawName.toLowerCase() )
             .attr( 'data-category', category || '' );
 
         // Colonne miniature
@@ -216,7 +235,7 @@
         }
         $row.append( $thumbCell );
 
-        $row.append( $( '<td class="ppb-product-name">' ).html( displayName ) );
+        $row.append( $( '<td class="ppb-product-name">' ).html( nameHtml ) );
 
         // Colonne prix : prix partenaire + prix public barré + toggle paliers si définis.
         const $partnerCell = $( '<td class="ppb-col-num ppb-col-partner">' );
@@ -284,6 +303,41 @@
 
     function bindSearch() {
         $( '#ppb-search' ).on( 'input', filterCatalog );
+        bindTutorialVideo();
+    }
+
+    function bindTutorialVideo() {
+        if ( ! cfg.tutorialVideoUrl ) return;
+
+        // Injecte le bouton tutoriel dans la toolbar.
+        const $toolbarActions = $( '.ppb-toolbar-actions' );
+        if ( ! $toolbarActions.length ) return;
+
+        const $btn = $( '<button type="button" class="ppb-btn ppb-btn-ghost ppb-tutorial-btn">' )
+            .html( '📹 Tutoriel' );
+
+        $toolbarActions.prepend( $btn );
+
+        $btn.on( 'click', function () {
+            let $panel = $( '#ppb-tutorial-panel' );
+
+            if ( $panel.length ) {
+                $panel.slideToggle( 200 );
+                return;
+            }
+
+            // Construction du panneau avec iframe responsive.
+            $panel = $( '<div id="ppb-tutorial-panel" class="ppb-tutorial-panel">' ).html(
+                '<div class="ppb-tutorial-iframe-wrap">' +
+                '<iframe src="' + escAttr( cfg.tutorialVideoUrl ) + '" ' +
+                'frameborder="0" allowfullscreen loading="lazy" ' +
+                'allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture">' +
+                '</iframe></div>'
+            );
+
+            $( '.ppb-toolbar' ).after( $panel );
+            $panel.hide().slideDown( 200 );
+        } );
     }
 
     function renderCategoryFilter( categories ) {

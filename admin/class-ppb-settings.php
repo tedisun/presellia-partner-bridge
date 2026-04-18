@@ -54,11 +54,13 @@ class PPB_Settings {
     // -------------------------------------------------------------------------
 
     public function register_settings(): void {
-        register_setting( self::OPTION_GROUP, 'ppb_portal_page_id',   [ 'sanitize_callback' => 'absint' ] );
-        register_setting( self::OPTION_GROUP, 'ppb_token_ttl',        [ 'sanitize_callback' => 'absint' ] );
-        register_setting( self::OPTION_GROUP, 'ppb_log_retention',    [ 'sanitize_callback' => 'absint' ] );
-        register_setting( self::OPTION_GROUP, 'ppb_portal_title',     [ 'sanitize_callback' => 'sanitize_text_field' ] );
-        register_setting( self::OPTION_GROUP, 'ppb_portal_logo_url',  [ 'sanitize_callback' => 'esc_url_raw' ] );
+        register_setting( self::OPTION_GROUP, 'ppb_portal_page_id',       [ 'sanitize_callback' => 'absint' ] );
+        register_setting( self::OPTION_GROUP, 'ppb_token_ttl',            [ 'sanitize_callback' => 'absint' ] );
+        register_setting( self::OPTION_GROUP, 'ppb_log_retention',        [ 'sanitize_callback' => 'absint' ] );
+        register_setting( self::OPTION_GROUP, 'ppb_portal_title',         [ 'sanitize_callback' => 'sanitize_text_field' ] );
+        register_setting( self::OPTION_GROUP, 'ppb_portal_logo_url',      [ 'sanitize_callback' => 'esc_url_raw' ] );
+        register_setting( self::OPTION_GROUP, 'ppb_access_request_url',   [ 'sanitize_callback' => 'esc_url_raw' ] );
+        register_setting( self::OPTION_GROUP, 'ppb_tutorial_video_url',   [ 'sanitize_callback' => 'esc_url_raw' ] );
     }
 
     // -------------------------------------------------------------------------
@@ -183,6 +185,20 @@ class PPB_Settings {
                         <td>
                             <input type="url" name="ppb_portal_logo_url" value="<?php echo esc_attr( get_option( 'ppb_portal_logo_url', '' ) ); ?>" class="regular-text">
                             <p class="description"><?php esc_html_e( 'Affiché en haut du portail. Laisser vide pour utiliser le logo du site.', 'presellia-partner-bridge' ); ?></p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th><?php esc_html_e( 'Lien "Demander l\'accès"', 'presellia-partner-bridge' ); ?></th>
+                        <td>
+                            <input type="url" name="ppb_access_request_url" value="<?php echo esc_attr( get_option( 'ppb_access_request_url', '' ) ); ?>" class="regular-text" placeholder="https://…">
+                            <p class="description"><?php esc_html_e( 'URL du formulaire de demande de partenariat. Si renseignée, un lien "Pas encore partenaire ?" apparaît sous le formulaire de connexion.', 'presellia-partner-bridge' ); ?></p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th><?php esc_html_e( 'Vidéo tutoriel (URL)', 'presellia-partner-bridge' ); ?></th>
+                        <td>
+                            <input type="url" name="ppb_tutorial_video_url" value="<?php echo esc_attr( get_option( 'ppb_tutorial_video_url', '' ) ); ?>" class="regular-text" placeholder="https://…">
+                            <p class="description"><?php esc_html_e( 'URL YouTube, Loom, Vimeo… Si renseignée, un bouton "📹 Tutoriel" apparaît dans la barre d\'outils du portail.', 'presellia-partner-bridge' ); ?></p>
                         </td>
                     </tr>
                     <tr>

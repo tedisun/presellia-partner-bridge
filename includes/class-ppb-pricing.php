@@ -292,6 +292,10 @@ class PPB_Pricing {
         }
         $thumbnail_url = $image_id ? wp_get_attachment_image_url( $image_id, 'thumbnail' ) : '';
 
+        // Permalink : pour les variations, lien vers la fiche du produit parent.
+        $permalink_id = ( $product instanceof WC_Product_Variation ) ? $product->get_parent_id() : $id;
+        $permalink    = (string) get_permalink( $permalink_id );
+
         $data = [
             'id'            => $id,
             'name'          => $product->get_name(),
@@ -305,6 +309,7 @@ class PPB_Pricing {
             'manage_stock'  => $product->managing_stock(),
             'stock_qty'     => $product->managing_stock() ? $product->get_stock_quantity() : null,
             'thumbnail_url' => $thumbnail_url ?: '',
+            'permalink'     => $permalink,
         ];
 
         // Pour les variations : ajouter les attributs formatés.
