@@ -1,5 +1,10 @@
 # Changelog — Presellia Partner Bridge
 
+## [2.0.1] — 2026-04-19
+
+### Correctif
+- Fix mise à jour via "Vérifier maintenant" : `wp_nonce_url()` HTML-encodait l'URL (`&amp;`) avant l'envoi JSON, causant un double-encodage côté JS et un échec de validation du nonce dans `update.php` ("Lien expiré"). Remplacé par `add_query_arg()` + `wp_create_nonce()` qui retourne une URL propre.
+
 ## [2.0.0] — 2026-04-19
 
 ### Catalogue public (service client)

@@ -371,9 +371,17 @@ class PPB_Updater {
             $site_transient->response[ self::PLUGIN_BASENAME ] = $this->build_update_object( $release, $latest );
             set_site_transient( 'update_plugins', $site_transient );
 
-            $result['update_url'] = wp_nonce_url(
-                admin_url( 'update.php?action=upgrade-plugin&plugin=' . rawurlencode( self::PLUGIN_BASENAME ) ),
-                'upgrade-plugin_' . self::PLUGIN_BASENAME
+            // On utilise add_query_arg + wp_create_nonce au lieu de wp_nonce_url()
+            // car wp_nonce_url() HTML-encode l'URL (&amp; au lieu de &).
+            // Le JS re-encoderait ces entités, causant un double-encodage qui fait
+            // échouer la vérification du nonce dans update.php.
+            $result['update_url'] = add_query_arg(
+                [
+                    'action'   => 'upgrade-plugin',
+                    'plugin'   => self::PLUGIN_BASENAME,
+                    '_wpnonce' => wp_create_nonce( 'upgrade-plugin_' . self::PLUGIN_BASENAME ),
+                ],
+                admin_url( 'update.php' )
             );
             $result['changelog_url'] = 'https://github.com/' . self::GITHUB_USER . '/' . self::GITHUB_REPO . '/releases/tag/' . $release->tag_name;
         }
