@@ -32,6 +32,8 @@
         bindCartToggle();
         bindTiersToggle();
         bindCheckout();
+        bindTabs();
+        loadPublicCatalog();
     } );
 
     // -------------------------------------------------------------------------
@@ -664,6 +666,213 @@
             document.execCommand( 'copy' );
             $tmp.remove();
         }
+    }
+
+    // -------------------------------------------------------------------------
+    // Onglets
+    // -------------------------------------------------------------------------
+
+    function bindTabs() {
+        $( document ).on( 'click', '.ppb-tab', function () {
+            const tab = $( this ).data( 'tab' );
+
+            $( '.ppb-tab' ).removeClass( 'ppb-tab-active' );
+            $( this ).addClass( 'ppb-tab-active' );
+
+            $( '.ppb-tab-pane' ).addClass( 'ppb-hidden' );
+            $( '#ppb-tab-' + tab ).removeClass( 'ppb-hidden' );
+
+            if ( tab === 'public' ) {
+                $( '#ppb-cart-bar' ).addClass( 'ppb-tab-hidden' );
+            } else {
+                $( '#ppb-cart-bar' ).removeClass( 'ppb-tab-hidden' );
+            }
+        } );
+    }
+
+    // -------------------------------------------------------------------------
+    // Catalogue public
+    // -------------------------------------------------------------------------
+
+    function loadPublicCatalog() {
+        const $loading = $( '#ppb-public-loading' );
+        const $table   = $( '#ppb-public-table' );
+        const $empty   = $( '#ppb-public-empty' );
+        const $tbody   = $( '#ppb-public-body' );
+
+        $loading.show();
+        $table.addClass( 'ppb-hidden' );
+        $empty.addClass( 'ppb-hidden' );
+
+        $.post( cfg.ajaxUrl, {
+            action: 'ppb_load_public_catalog',
+            nonce:  cfg.nonce,
+        } )
+        .done( function ( res ) {
+            $loading.hide();
+
+            if ( ! res.success || ! res.data.catalog || res.data.catalog.length === 0 ) {
+                $empty.removeClass( 'ppb-hidden' );
+                return;
+            }
+
+            $tbody.empty();
+            renderPublicCatalog( res.data.catalog, $tbody );
+            $table.removeClass( 'ppb-hidden' );
+            bindPublicSearch();
+        } )
+        .fail( function () {
+            $loading.hide();
+            $empty.text( 'Erreur de chargement.' ).removeClass( 'ppb-hidden' );
+        } );
+    }
+
+    function renderPublicCatalog( products, $tbody ) {
+        const categories = [];
+        const byCategory = {};
+
+        products.forEach( function ( product ) {
+            const cat   = product.category || 'Autres';
+            const order = product.category_order !== undefined ? product.category_order : 9999;
+            if ( ! byCategory[ cat ] ) {
+                byCategory[ cat ] = { products: [], order: order };
+                categories.push( cat );
+            }
+            byCategory[ cat ].products.push( product );
+        } );
+
+        categories.sort( function ( a, b ) {
+            return byCategory[ a ].order - byCategory[ b ].order;
+        } );
+
+        categories.forEach( function ( cat ) {
+            $tbody.append(
+                $( '<tr class="ppb-row-category">' )
+                    .attr( 'data-category', cat )
+                    .append( $( '<td colspan="4">' ).text( cat ) )
+            );
+
+            byCategory[ cat ].products.forEach( function ( product ) {
+                if ( product.variations && product.variations.length ) {
+                    const $thumbCell = $( '<td class="ppb-col-thumb">' );
+                    if ( product.thumbnail_url ) {
+                        $thumbCell.html( '<img src="' + escAttr( product.thumbnail_url ) + '" class="ppb-product-thumb" alt="">' );
+                    }
+                    $tbody.append(
+                        $( '<tr class="ppb-row-parent">' )
+                            .attr( 'data-category', cat )
+                            .append( $thumbCell )
+                            .append( $( '<td colspan="3">' ).html( '<strong>' + escHtml( product.name ) + '</strong>' ) )
+                    );
+                    product.variations.forEach( function ( variation ) {
+                        $tbody.append( buildPublicRow( variation, product.name, cat ) );
+                    } );
+                } else {
+                    $tbody.append( buildPublicRow( product, '', cat ) );
+                }
+            } );
+        } );
+
+        renderPublicCategoryFilter( categories );
+    }
+
+    function buildPublicRow( product, parentName, category ) {
+        const rawName = parentName
+            ? parentName + ' — ' + ( product.attributes || product.name )
+            : product.name;
+
+        let nameHtml;
+        if ( parentName ) {
+            nameHtml = escHtml( parentName ) + ' — <em>' + escHtml( product.attributes || product.name ) + '</em>';
+        } else {
+            nameHtml = escHtml( product.name );
+        }
+        if ( product.permalink ) {
+            nameHtml = '<a href="' + escAttr( product.permalink ) + '" target="_blank" rel="noopener" class="ppb-product-link">' + nameHtml + '</a>';
+        }
+
+        const outOfStock = product.stock_status === 'outofstock';
+        const backorder  = product.stock_status === 'onbackorder';
+
+        let stockHtml;
+        if ( outOfStock ) {
+            stockHtml = '<span class="ppb-stock-badge ppb-stock-out">Rupture</span>';
+        } else if ( backorder ) {
+            stockHtml = '<span class="ppb-stock-badge ppb-stock-backorder">Sur commande</span>';
+        } else {
+            let label = 'En stock';
+            if ( product.manage_stock && product.stock_qty !== null ) {
+                label += ' (' + parseInt( product.stock_qty, 10 ) + ')';
+            }
+            stockHtml = '<span class="ppb-stock-badge ppb-stock-in">' + escHtml( label ) + '</span>';
+        }
+
+        const regular = product.regular_price;
+        const sale    = product.sale_price;
+        let priceHtml;
+        if ( sale !== null && sale < regular ) {
+            priceHtml = '<s class="ppb-price-public-old">' + formatPrice( regular ) + '</s> ' +
+                        '<span class="ppb-price-sale">' + formatPrice( sale ) + '</span>';
+        } else if ( regular !== null ) {
+            priceHtml = '<span class="ppb-price-regular">' + formatPrice( regular ) + '</span>';
+        } else {
+            priceHtml = '—';
+        }
+
+        return $( '<tr class="ppb-row-product">' )
+            .attr( 'data-name', rawName.toLowerCase() )
+            .attr( 'data-category', category || '' )
+            .append(
+                $( '<td class="ppb-col-thumb">' ).html(
+                    product.thumbnail_url
+                        ? '<img src="' + escAttr( product.thumbnail_url ) + '" class="ppb-product-thumb" alt="">'
+                        : ''
+                )
+            )
+            .append( $( '<td class="ppb-product-name">' ).html( nameHtml ) )
+            .append( $( '<td class="ppb-col-num">' ).html( priceHtml ) )
+            .append( $( '<td class="ppb-col-stock">' ).html( stockHtml ) );
+    }
+
+    function renderPublicCategoryFilter( categories ) {
+        if ( categories.length <= 1 ) return;
+        if ( $( '#ppb-public-cat-filter' ).length ) return;
+
+        const $select = $( '<select id="ppb-public-cat-filter" class="ppb-input ppb-cat-select">' )
+            .append( $( '<option value="">' ).text( 'Toutes les catégories' ) );
+
+        categories.forEach( function ( cat ) {
+            $select.append( $( '<option>' ).val( cat ).text( cat ) );
+        } );
+
+        $select.on( 'change', filterPublicCatalog );
+        $select.insertBefore( '#ppb-public-search' );
+    }
+
+    function bindPublicSearch() {
+        $( '#ppb-public-search' ).on( 'input', filterPublicCatalog );
+    }
+
+    function filterPublicCatalog() {
+        const q   = $( '#ppb-public-search' ).val().toLowerCase().trim();
+        const cat = $( '#ppb-public-cat-filter' ).val() || '';
+
+        $( '#ppb-public-body tr.ppb-row-product' ).each( function () {
+            const name   = $( this ).data( 'name' ) || '';
+            const rowCat = $( this ).attr( 'data-category' ) || '';
+            $( this ).toggle( ( q === '' || name.indexOf( q ) !== -1 ) && ( cat === '' || rowCat === cat ) );
+        } );
+
+        $( '#ppb-public-body tr.ppb-row-parent' ).each( function () {
+            const $siblings = $( this ).nextUntil( '.ppb-row-parent, .ppb-row-category', '.ppb-row-product' );
+            $( this ).toggle( $siblings.filter( ':visible' ).length > 0 );
+        } );
+
+        $( '#ppb-public-body tr.ppb-row-category' ).each( function () {
+            const rowCat = $( this ).attr( 'data-category' ) || '';
+            const $items = $( '#ppb-public-body tr[data-category="' + rowCat + '"]' ).not( '.ppb-row-category' );
+            $( this ).toggle( $items.filter( ':visible' ).length > 0 );
+        } );
     }
 
 } )( jQuery );

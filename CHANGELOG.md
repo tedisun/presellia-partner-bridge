@@ -1,5 +1,14 @@
 # Changelog — Presellia Partner Bridge
 
+## [2.0.0] — 2026-04-19
+
+### Catalogue public (service client)
+- Le shortcode `[ppb_portal]` affiche désormais deux onglets : **Catalogue** (public, accès libre) et **Espace Revendeur** (protégé par mot de passe)
+- Onglet Catalogue : tableau produits avec nom cliquable, prix public (barré si promo), badge stock coloré (En stock / Rupture / Sur commande + quantité si gestion stock active)
+- Recherche instantanée client-side (sans rechargement) + filtre par catégorie dans l'onglet Catalogue
+- Nouvel endpoint AJAX `ppb_load_public_catalog` (sans authentification) — utilise le même catalogue PPB que l'espace revendeur
+- La barre panier est masquée automatiquement sur l'onglet Catalogue
+
 ## [1.9.0] — 2026-04-17
 
 ### Ajouté
