@@ -60,7 +60,7 @@ $all_done = $has_password && $portal_page_ok && $has_prices;
     <div class="ppb-gs-hero">
         <h2><?php esc_html_e( 'Qu\'est-ce que Presellia Partner Bridge ?', 'presellia-partner-bridge' ); ?></h2>
         <p>
-            <?php esc_html_e( 'PPB est un portail de commande B2B intégré à WooCommerce. Il permet à vos revendeurs et partenaires d\'accéder à un catalogue privé avec leurs prix négociés, de composer leur commande et d\'être redirigés directement vers le checkout WooCommerce — sans créer de compte, sans plugin d\'abonnement, sans complexité.', 'presellia-partner-bridge' ); ?>
+            <?php esc_html_e( 'PPB est un portail intégré à WooCommerce avec deux faces. L\'onglet Catalogue (accès libre) affiche les prix publics et le stock en temps réel — idéal pour votre service client ou vos clients réguliers qui veulent consulter la disponibilité sans se connecter. L\'onglet Espace Revendeur (protégé par mot de passe) donne aux partenaires l\'accès à leurs prix négociés et leur permet de composer et soumettre une commande directement vers le checkout WooCommerce.', 'presellia-partner-bridge' ); ?>
         </p>
     </div>
 
@@ -145,49 +145,71 @@ $all_done = $has_password && $portal_page_ok && $has_prices;
     <div class="ppb-gs-card">
         <h2><?php esc_html_e( 'Comment fonctionne le portail', 'presellia-partner-bridge' ); ?></h2>
 
+        <h3 style="margin-top:0">📋 <?php esc_html_e( 'Onglet Catalogue (accès libre)', 'presellia-partner-bridge' ); ?></h3>
         <div class="ppb-gs-flow">
 
             <div class="ppb-gs-flow-step">
                 <div class="ppb-gs-step-num">1</div>
                 <div>
-                    <strong><?php esc_html_e( 'Le partenaire visite la page portail', 'presellia-partner-bridge' ); ?></strong>
-                    <p><?php esc_html_e( 'Une modale lui demande le mot de passe. Il saisit le mot de passe partenaire que vous lui avez communiqué.', 'presellia-partner-bridge' ); ?></p>
+                    <strong><?php esc_html_e( 'Tout visiteur arrive sur l\'onglet Catalogue', 'presellia-partner-bridge' ); ?></strong>
+                    <p><?php esc_html_e( 'Sans mot de passe ni connexion, le tableau affiche immédiatement les produits avec leurs prix publics (barré si promo) et un badge de stock coloré (En stock / Rupture / Sur commande).', 'presellia-partner-bridge' ); ?></p>
                 </div>
             </div>
 
             <div class="ppb-gs-flow-step">
                 <div class="ppb-gs-step-num">2</div>
                 <div>
-                    <strong><?php esc_html_e( 'Un token est créé et stocké', 'presellia-partner-bridge' ); ?></strong>
-                    <p>
-                        <?php esc_html_e( 'WordPress génère un token de session (valide', 'presellia-partner-bridge' ); ?>
-                        <?php echo esc_html( get_option( 'ppb_token_ttl', 30 ) ); ?>
-                        <?php esc_html_e( 'jours). Il est stocké côté serveur (transient) et dans un cookie sécurisé côté navigateur. Le partenaire ne saisit plus le mot de passe tant que le token est valide.', 'presellia-partner-bridge' ); ?>
-                    </p>
+                    <strong><?php esc_html_e( 'Recherche et filtrage instantanés', 'presellia-partner-bridge' ); ?></strong>
+                    <p><?php esc_html_e( 'La barre de recherche et le filtre par catégorie fonctionnent côté client (JavaScript) — aucun rechargement de page. Idéal pour le service client qui cherche rapidement un produit.', 'presellia-partner-bridge' ); ?></p>
                 </div>
             </div>
+
+        </div>
+
+        <h3>🤝 <?php esc_html_e( 'Onglet Espace Revendeur (protégé)', 'presellia-partner-bridge' ); ?></h3>
+        <div class="ppb-gs-flow">
 
             <div class="ppb-gs-flow-step">
                 <div class="ppb-gs-step-num">3</div>
                 <div>
-                    <strong><?php esc_html_e( 'Le catalogue s\'affiche avec les prix partenaires', 'presellia-partner-bridge' ); ?></strong>
-                    <p><?php esc_html_e( 'Chaque produit avec un prix partenaire défini est affiché avec ce prix. Les produits sans prix partenaire sont visibles mais non commandables. Le partenaire peut filtrer par nom de produit.', 'presellia-partner-bridge' ); ?></p>
+                    <strong><?php esc_html_e( 'Le partenaire clique l\'onglet et saisit le mot de passe', 'presellia-partner-bridge' ); ?></strong>
+                    <p><?php esc_html_e( 'Une modale lui demande le mot de passe partenaire que vous lui avez communiqué.', 'presellia-partner-bridge' ); ?></p>
                 </div>
             </div>
 
             <div class="ppb-gs-flow-step">
                 <div class="ppb-gs-step-num">4</div>
                 <div>
-                    <strong><?php esc_html_e( 'Il compose sa commande et valide', 'presellia-partner-bridge' ); ?></strong>
-                    <p><?php esc_html_e( 'Le mini-panier intégré au portail lui permet d\'ajouter des quantités. En cliquant "Commander", il est redirigé vers le checkout WooCommerce normal. Les prix partenaires sont appliqués automatiquement dans le panier grâce au cookie de session.', 'presellia-partner-bridge' ); ?></p>
+                    <strong><?php esc_html_e( 'Un token est créé et stocké', 'presellia-partner-bridge' ); ?></strong>
+                    <p>
+                        <?php esc_html_e( 'WordPress génère un token de session (valide', 'presellia-partner-bridge' ); ?>
+                        <?php echo esc_html( get_option( 'ppb_token_ttl', 30 ) ); ?>
+                        <?php esc_html_e( 'jours). Le partenaire ne saisit plus le mot de passe tant que le token est valide.', 'presellia-partner-bridge' ); ?>
+                    </p>
                 </div>
             </div>
 
             <div class="ppb-gs-flow-step">
                 <div class="ppb-gs-step-num">5</div>
                 <div>
+                    <strong><?php esc_html_e( 'Le catalogue affiche les prix partenaires', 'presellia-partner-bridge' ); ?></strong>
+                    <p><?php esc_html_e( 'Chaque produit avec un prix partenaire défini est affiché avec ce prix. Les produits sans prix partenaire sont visibles mais non commandables.', 'presellia-partner-bridge' ); ?></p>
+                </div>
+            </div>
+
+            <div class="ppb-gs-flow-step">
+                <div class="ppb-gs-step-num">6</div>
+                <div>
+                    <strong><?php esc_html_e( 'Il compose sa commande et valide', 'presellia-partner-bridge' ); ?></strong>
+                    <p><?php esc_html_e( 'Le mini-panier intégré permet d\'ajouter des quantités. En cliquant "Commander", il est redirigé vers le checkout WooCommerce. Les prix partenaires sont appliqués automatiquement grâce au cookie de session.', 'presellia-partner-bridge' ); ?></p>
+                </div>
+            </div>
+
+            <div class="ppb-gs-flow-step">
+                <div class="ppb-gs-step-num">7</div>
+                <div>
                     <strong><?php esc_html_e( 'La commande WooCommerce est passée normalement', 'presellia-partner-bridge' ); ?></strong>
-                    <p><?php esc_html_e( 'PPB ne modifie pas le checkout ni les emails WooCommerce. Le partenaire paye et reçoit sa confirmation comme n\'importe quel client. Vous gérez les commandes partenaires depuis WooCommerce → Commandes.', 'presellia-partner-bridge' ); ?></p>
+                    <p><?php esc_html_e( 'PPB ne modifie pas le checkout ni les emails WooCommerce. Vous gérez les commandes partenaires depuis WooCommerce → Commandes.', 'presellia-partner-bridge' ); ?></p>
                 </div>
             </div>
 

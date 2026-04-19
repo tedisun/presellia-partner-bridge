@@ -1,5 +1,10 @@
 # Changelog — Presellia Partner Bridge
 
+## [2.0.2] — 2026-04-19
+
+### Modifié
+- Guide de démarrage (`page-ppb-guide.php`) : description hero et section "Comment fonctionne le portail" mis à jour pour refléter l'architecture deux onglets de v2.0.0 (Catalogue public + Espace Revendeur).
+
 ## [2.0.1] — 2026-04-19
 
 ### Correctif
