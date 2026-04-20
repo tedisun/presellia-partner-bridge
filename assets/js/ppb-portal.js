@@ -1,6 +1,7 @@
 /**
  * Presellia Partner Bridge — JS Portail
  * Gère : modale mdp, chargement catalogue, barre panier sticky, checkout.
+ * Gère aussi : catalogue public [ppb_catalog] (init conditionnelle sur #ppb-catalog).
  */
 ( function ( $ ) {
     'use strict';
@@ -22,18 +23,21 @@
     // -------------------------------------------------------------------------
 
     $( function () {
-        if ( '1' === cfg.isAuth ) {
-            loadCatalog();
+        if ( $( '#ppb-portal' ).length ) {
+            if ( '1' === cfg.isAuth ) {
+                loadCatalog();
+            }
+            bindAuthForm();
+            bindToolbar();
+            bindCartActions();
+            bindCartToggle();
+            bindTiersToggle();
+            bindCheckout();
         }
 
-        bindAuthForm();
-        bindToolbar();
-        bindCartActions();
-        bindCartToggle();
-        bindTiersToggle();
-        bindCheckout();
-        bindTabs();
-        loadPublicCatalog();
+        if ( $( '#ppb-catalog' ).length ) {
+            loadPublicCatalog();
+        }
     } );
 
     // -------------------------------------------------------------------------
@@ -640,58 +644,7 @@
     }
 
     // -------------------------------------------------------------------------
-    // Utilitaires
-    // -------------------------------------------------------------------------
-
-    function formatPrice( amount ) {
-        return parseFloat( amount ).toLocaleString( 'fr-FR', {
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 0,
-        } ) + '\u00a0' + cfg.currency;
-    }
-
-    function escHtml( str ) {
-        return $( '<div>' ).text( str || '' ).html();
-    }
-
-    function escAttr( str ) {
-        return String( str || '' ).replace( /"/g, '&quot;' );
-    }
-
-    function copyToClipboard( text ) {
-        if ( navigator.clipboard ) {
-            navigator.clipboard.writeText( text );
-        } else {
-            const $tmp = $( '<textarea>' ).val( text ).appendTo( 'body' ).select();
-            document.execCommand( 'copy' );
-            $tmp.remove();
-        }
-    }
-
-    // -------------------------------------------------------------------------
-    // Onglets
-    // -------------------------------------------------------------------------
-
-    function bindTabs() {
-        $( document ).on( 'click', '.ppb-tab', function () {
-            const tab = $( this ).data( 'tab' );
-
-            $( '.ppb-tab' ).removeClass( 'ppb-tab-active' );
-            $( this ).addClass( 'ppb-tab-active' );
-
-            $( '.ppb-tab-pane' ).addClass( 'ppb-hidden' );
-            $( '#ppb-tab-' + tab ).removeClass( 'ppb-hidden' );
-
-            if ( tab === 'public' ) {
-                $( '#ppb-cart-bar' ).addClass( 'ppb-tab-hidden' );
-            } else {
-                $( '#ppb-cart-bar' ).removeClass( 'ppb-tab-hidden' );
-            }
-        } );
-    }
-
-    // -------------------------------------------------------------------------
-    // Catalogue public
+    // Catalogue public [ppb_catalog]
     // -------------------------------------------------------------------------
 
     function loadPublicCatalog() {
@@ -873,6 +826,35 @@
             const $items = $( '#ppb-public-body tr[data-category="' + rowCat + '"]' ).not( '.ppb-row-category' );
             $( this ).toggle( $items.filter( ':visible' ).length > 0 );
         } );
+    }
+
+    // -------------------------------------------------------------------------
+    // Utilitaires
+    // -------------------------------------------------------------------------
+
+    function formatPrice( amount ) {
+        return parseFloat( amount ).toLocaleString( 'fr-FR', {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0,
+        } ) + '\u00a0' + cfg.currency;
+    }
+
+    function escHtml( str ) {
+        return $( '<div>' ).text( str || '' ).html();
+    }
+
+    function escAttr( str ) {
+        return String( str || '' ).replace( /"/g, '&quot;' );
+    }
+
+    function copyToClipboard( text ) {
+        if ( navigator.clipboard ) {
+            navigator.clipboard.writeText( text );
+        } else {
+            const $tmp = $( '<textarea>' ).val( text ).appendTo( 'body' ).select();
+            document.execCommand( 'copy' );
+            $tmp.remove();
+        }
     }
 
 } )( jQuery );

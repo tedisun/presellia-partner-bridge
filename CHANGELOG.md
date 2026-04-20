@@ -1,5 +1,18 @@
 # Changelog — Presellia Partner Bridge
 
+## [2.1.0] — 2026-04-20
+
+### Ajouté
+- Nouveau shortcode `[ppb_catalog]` : catalogue public accès libre (prix publics + stock + recherche + filtre catégorie), à placer sur une page dédiée séparée du portail partenaire
+- Nouveau réglage `ppb_catalog_page_id` : page sur laquelle charger les scripts du catalogue public
+- PPB Réglages : deux onglets admin **Portail Partenaire** et **Catalogue Public** pour des configurations indépendantes
+
+### Modifié
+- `[ppb_portal]` restauré à sa structure v1.x (espace revendeur seul, sans onglets) — plus simple, plus rapide
+- `enqueue_scripts()` charge le JS/CSS sur la page portail OU la page catalogue selon les réglages
+- Guide de démarrage mis à jour : nouvelle checklist (étape catalogue optionnelle), section "Comment fonctionne" restructurée pour les deux shortcodes
+- `uninstall.php` : nettoyage de `ppb_catalog_page_id`, `ppb_access_request_url`, `ppb_tutorial_video_url` à la désinstallation
+
 ## [2.0.2] — 2026-04-19
 
 ### Modifié

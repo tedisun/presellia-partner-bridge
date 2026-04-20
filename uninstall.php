@@ -26,6 +26,9 @@ $options = [
     'ppb_log_retention',
     'ppb_api_key',
     'ppb_db_version',
+    'ppb_catalog_page_id',
+    'ppb_access_request_url',
+    'ppb_tutorial_video_url',
 ];
 
 foreach ( $options as $option ) {

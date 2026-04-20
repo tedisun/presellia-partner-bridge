@@ -456,70 +456,21 @@
     border: 0;
 }
 
-/* ---- Responsive ---- */
 /* ============================================================
-   ONGLETS
-   ============================================================ */
-
-.ppb-tabs {
-    display: flex;
-    border-bottom: 2px solid #e0e0e0;
-    margin: 0 0 24px;
-    gap: 0;
-}
-
-.ppb-tab {
-    background: none;
-    border: none;
-    border-bottom: 3px solid transparent;
-    margin-bottom: -2px;
-    padding: 10px 22px;
-    font-size: 15px;
-    font-weight: 500;
-    color: #555;
-    cursor: pointer;
-    transition: color .15s, border-color .15s;
-}
-
-.ppb-tab:hover { color: #222; }
-
-.ppb-tab.ppb-tab-active {
-    color: #2271b1;
-    border-bottom-color: #2271b1;
-}
-
-.ppb-tab-pane.ppb-hidden { display: none; }
-
-#ppb-cart-bar.ppb-tab-hidden { display: none !important; }
-
-/* ============================================================
-   CATALOGUE PUBLIC — badges stock
+   CATALOGUE PUBLIC [ppb_catalog] — badges stock + prix
    ============================================================ */
 
 .ppb-col-stock { white-space: nowrap; }
-
-.ppb-stock-badge {
-    display: inline-block;
-    padding: 2px 9px;
-    border-radius: 10px;
-    font-size: 12px;
-    font-weight: 600;
-}
 
 .ppb-stock-in       { background: #e8f5e9; color: #2e7d32; }
 .ppb-stock-out      { background: #fce4ec; color: #c62828; }
 .ppb-stock-backorder{ background: #fff3e0; color: #e65100; }
 
-/* CATALOGUE PUBLIC — prix */
-
 .ppb-price-public-old { color: #999; font-size: 12px; }
 .ppb-price-sale       { color: #c62828; font-weight: 600; }
 .ppb-price-regular    { font-weight: 500; }
 
-/* ============================================================
-   RESPONSIVE ONGLETS
-   ============================================================ */
-
+/* ---- Responsive ---- */
 @media ( max-width: 600px ) {
     .ppb-auth-form { flex-direction: column; }
     .ppb-toolbar   { flex-direction: column; align-items: stretch; }

@@ -11,16 +11,21 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // URLs utiles pour les liens dans la checklist.
-$settings_url     = admin_url( 'admin.php?page=ppb-settings' );
-$prices_url       = admin_url( 'admin.php?page=ppb-prices' );
-$pages_url        = admin_url( 'edit.php?post_type=page' );
-$new_page_url     = admin_url( 'post-new.php?post_type=page' );
+$settings_url         = admin_url( 'admin.php?page=ppb-settings' );
+$settings_catalog_url = admin_url( 'admin.php?page=ppb-settings&tab=catalog' );
+$prices_url           = admin_url( 'admin.php?page=ppb-prices' );
+$pages_url            = admin_url( 'edit.php?post_type=page' );
+$new_page_url         = admin_url( 'post-new.php?post_type=page' );
 
 // État de la configuration (pour la checklist dynamique).
-$has_password     = (bool) get_option( 'ppb_portal_password_hash', '' );
-$portal_page_id   = (int)  get_option( 'ppb_portal_page_id', 0 );
-$portal_page_ok   = $portal_page_id > 0 && get_post( $portal_page_id );
-$portal_url       = $portal_page_ok ? get_permalink( $portal_page_id ) : '';
+$has_password    = (bool) get_option( 'ppb_portal_password_hash', '' );
+$portal_page_id  = (int)  get_option( 'ppb_portal_page_id', 0 );
+$portal_page_ok  = $portal_page_id > 0 && get_post( $portal_page_id );
+$portal_url      = $portal_page_ok ? get_permalink( $portal_page_id ) : '';
+
+$catalog_page_id = (int) get_option( 'ppb_catalog_page_id', 0 );
+$catalog_page_ok = $catalog_page_id > 0 && get_post( $catalog_page_id );
+$catalog_url     = $catalog_page_ok ? get_permalink( $catalog_page_id ) : '';
 
 // Vérifie si au moins un produit a un prix partenaire.
 global $wpdb;
@@ -60,7 +65,7 @@ $all_done = $has_password && $portal_page_ok && $has_prices;
     <div class="ppb-gs-hero">
         <h2><?php esc_html_e( 'Qu\'est-ce que Presellia Partner Bridge ?', 'presellia-partner-bridge' ); ?></h2>
         <p>
-            <?php esc_html_e( 'PPB est un portail intégré à WooCommerce avec deux faces. L\'onglet Catalogue (accès libre) affiche les prix publics et le stock en temps réel — idéal pour votre service client ou vos clients réguliers qui veulent consulter la disponibilité sans se connecter. L\'onglet Espace Revendeur (protégé par mot de passe) donne aux partenaires l\'accès à leurs prix négociés et leur permet de composer et soumettre une commande directement vers le checkout WooCommerce.', 'presellia-partner-bridge' ); ?>
+            <?php esc_html_e( 'PPB intègre deux outils complémentaires dans WooCommerce. Le shortcode [ppb_catalog] crée une page catalogue public (accès libre) qui affiche les prix publics et la disponibilité des produits en temps réel — idéal pour votre service client. Le shortcode [ppb_portal] crée l\'espace revendeur protégé par mot de passe, où vos partenaires consultent leurs prix négociés et passent commande directement vers le checkout WooCommerce.', 'presellia-partner-bridge' ); ?>
         </p>
     </div>
 
@@ -77,7 +82,7 @@ $all_done = $has_password && $portal_page_ok && $has_prices;
                             <?php esc_html_e( 'Définir le mot de passe partenaire', 'presellia-partner-bridge' ); ?>
                         </a>
                     </strong>
-                    <p><?php esc_html_e( 'WooCommerce → PPB Réglages → section "Mot de passe partenaire". Ce mot de passe unique est partagé avec tous vos partenaires. Il n\'est jamais stocké en clair — seul son empreinte (hash) est conservée.', 'presellia-partner-bridge' ); ?></p>
+                    <p><?php esc_html_e( 'WooCommerce → PPB Réglages (onglet Portail Partenaire) → section "Mot de passe partenaire". Ce mot de passe unique est partagé avec tous vos partenaires. Il n\'est jamais stocké en clair — seule son empreinte (hash) est conservée.', 'presellia-partner-bridge' ); ?></p>
                 </div>
             </li>
 
@@ -87,11 +92,11 @@ $all_done = $has_password && $portal_page_ok && $has_prices;
                     <strong>
                         <?php if ( $portal_page_ok ) : ?>
                             <a href="<?php echo esc_url( get_edit_post_link( $portal_page_id ) ); ?>">
-                                <?php esc_html_e( 'Page portail créée et configurée', 'presellia-partner-bridge' ); ?>
+                                <?php esc_html_e( 'Page portail partenaire créée et configurée', 'presellia-partner-bridge' ); ?>
                             </a>
                         <?php else : ?>
                             <a href="<?php echo esc_url( $new_page_url ); ?>">
-                                <?php esc_html_e( 'Créer la page portail', 'presellia-partner-bridge' ); ?>
+                                <?php esc_html_e( 'Créer la page portail partenaire [ppb_portal]', 'presellia-partner-bridge' ); ?>
                             </a>
                         <?php endif; ?>
                     </strong>
@@ -99,7 +104,7 @@ $all_done = $has_password && $portal_page_ok && $has_prices;
                         <?php esc_html_e( 'Créez une nouvelle page WordPress, ajoutez-y le shortcode', 'presellia-partner-bridge' ); ?>
                         <code>[ppb_portal]</code>
                         <?php esc_html_e( '(ou le widget Shortcode dans Elementor), puis publiez-la. Ensuite, sélectionnez cette page dans', 'presellia-partner-bridge' ); ?>
-                        <a href="<?php echo esc_url( $settings_url ); ?>"><?php esc_html_e( 'PPB Réglages → Page portail', 'presellia-partner-bridge' ); ?></a>.
+                        <a href="<?php echo esc_url( $settings_url ); ?>"><?php esc_html_e( 'PPB Réglages → Portail Partenaire → Page portail', 'presellia-partner-bridge' ); ?></a>.
                     </p>
                     <?php if ( ! $portal_page_ok ) : ?>
                     <p class="ppb-gs-tip">
@@ -138,6 +143,34 @@ $all_done = $has_password && $portal_page_ok && $has_prices;
                 </div>
             </li>
 
+            <li class="<?php echo $catalog_page_ok ? 'ppb-done' : 'ppb-todo ppb-neutral'; ?>">
+                <span class="ppb-check-icon"><?php echo $catalog_page_ok ? '✓' : '○'; ?></span>
+                <div>
+                    <strong>
+                        <?php if ( $catalog_page_ok ) : ?>
+                            <a href="<?php echo esc_url( get_edit_post_link( $catalog_page_id ) ); ?>">
+                                <?php esc_html_e( 'Page catalogue public créée et configurée', 'presellia-partner-bridge' ); ?>
+                            </a>
+                        <?php else : ?>
+                            <a href="<?php echo esc_url( $new_page_url ); ?>">
+                                <?php esc_html_e( 'Créer la page catalogue public [ppb_catalog] (optionnel)', 'presellia-partner-bridge' ); ?>
+                            </a>
+                        <?php endif; ?>
+                    </strong>
+                    <p>
+                        <?php esc_html_e( 'Optionnel mais recommandé. Créez une page accessible à tous (ex : "Catalogue"), ajoutez-y le shortcode', 'presellia-partner-bridge' ); ?>
+                        <code>[ppb_catalog]</code>
+                        <?php esc_html_e( ', puis sélectionnez cette page dans', 'presellia-partner-bridge' ); ?>
+                        <a href="<?php echo esc_url( $settings_catalog_url ); ?>"><?php esc_html_e( 'PPB Réglages → Catalogue Public', 'presellia-partner-bridge' ); ?></a>.
+                        <?php esc_html_e( 'Cette page affiche les prix publics et le stock — sans mot de passe.', 'presellia-partner-bridge' ); ?>
+                        <?php if ( $catalog_url ) : ?>
+                            <br><strong><?php esc_html_e( 'URL du catalogue :', 'presellia-partner-bridge' ); ?></strong>
+                            <a href="<?php echo esc_url( $catalog_url ); ?>" target="_blank"><?php echo esc_html( $catalog_url ); ?></a>
+                        <?php endif; ?>
+                    </p>
+                </div>
+            </li>
+
         </ul>
     </div>
 
@@ -145,14 +178,14 @@ $all_done = $has_password && $portal_page_ok && $has_prices;
     <div class="ppb-gs-card">
         <h2><?php esc_html_e( 'Comment fonctionne le portail', 'presellia-partner-bridge' ); ?></h2>
 
-        <h3 style="margin-top:0">📋 <?php esc_html_e( 'Onglet Catalogue (accès libre)', 'presellia-partner-bridge' ); ?></h3>
+        <h3 style="margin-top:0">📋 <?php esc_html_e( 'Catalogue public [ppb_catalog] — accès libre', 'presellia-partner-bridge' ); ?></h3>
         <div class="ppb-gs-flow">
 
             <div class="ppb-gs-flow-step">
                 <div class="ppb-gs-step-num">1</div>
                 <div>
-                    <strong><?php esc_html_e( 'Tout visiteur arrive sur l\'onglet Catalogue', 'presellia-partner-bridge' ); ?></strong>
-                    <p><?php esc_html_e( 'Sans mot de passe ni connexion, le tableau affiche immédiatement les produits avec leurs prix publics (barré si promo) et un badge de stock coloré (En stock / Rupture / Sur commande).', 'presellia-partner-bridge' ); ?></p>
+                    <strong><?php esc_html_e( 'Tout visiteur accède directement au catalogue', 'presellia-partner-bridge' ); ?></strong>
+                    <p><?php esc_html_e( 'Sans mot de passe ni connexion, le tableau affiche immédiatement tous les produits avec leurs prix publics (barré si promo) et un badge de stock coloré (En stock / Rupture / Sur commande).', 'presellia-partner-bridge' ); ?></p>
                 </div>
             </div>
 
@@ -160,25 +193,25 @@ $all_done = $has_password && $portal_page_ok && $has_prices;
                 <div class="ppb-gs-step-num">2</div>
                 <div>
                     <strong><?php esc_html_e( 'Recherche et filtrage instantanés', 'presellia-partner-bridge' ); ?></strong>
-                    <p><?php esc_html_e( 'La barre de recherche et le filtre par catégorie fonctionnent côté client (JavaScript) — aucun rechargement de page. Idéal pour le service client qui cherche rapidement un produit.', 'presellia-partner-bridge' ); ?></p>
+                    <p><?php esc_html_e( 'La barre de recherche et le filtre par catégorie fonctionnent côté client (JavaScript) — aucun rechargement de page. Idéal pour le service client qui cherche rapidement un produit ou vérifie sa disponibilité.', 'presellia-partner-bridge' ); ?></p>
                 </div>
             </div>
 
         </div>
 
-        <h3>🤝 <?php esc_html_e( 'Onglet Espace Revendeur (protégé)', 'presellia-partner-bridge' ); ?></h3>
+        <h3>🤝 <?php esc_html_e( 'Espace Revendeur [ppb_portal] — protégé par mot de passe', 'presellia-partner-bridge' ); ?></h3>
         <div class="ppb-gs-flow">
 
             <div class="ppb-gs-flow-step">
-                <div class="ppb-gs-step-num">3</div>
+                <div class="ppb-gs-step-num">1</div>
                 <div>
-                    <strong><?php esc_html_e( 'Le partenaire clique l\'onglet et saisit le mot de passe', 'presellia-partner-bridge' ); ?></strong>
+                    <strong><?php esc_html_e( 'Le partenaire ouvre la page portail et saisit le mot de passe', 'presellia-partner-bridge' ); ?></strong>
                     <p><?php esc_html_e( 'Une modale lui demande le mot de passe partenaire que vous lui avez communiqué.', 'presellia-partner-bridge' ); ?></p>
                 </div>
             </div>
 
             <div class="ppb-gs-flow-step">
-                <div class="ppb-gs-step-num">4</div>
+                <div class="ppb-gs-step-num">2</div>
                 <div>
                     <strong><?php esc_html_e( 'Un token est créé et stocké', 'presellia-partner-bridge' ); ?></strong>
                     <p>
@@ -190,7 +223,7 @@ $all_done = $has_password && $portal_page_ok && $has_prices;
             </div>
 
             <div class="ppb-gs-flow-step">
-                <div class="ppb-gs-step-num">5</div>
+                <div class="ppb-gs-step-num">3</div>
                 <div>
                     <strong><?php esc_html_e( 'Le catalogue affiche les prix partenaires', 'presellia-partner-bridge' ); ?></strong>
                     <p><?php esc_html_e( 'Chaque produit avec un prix partenaire défini est affiché avec ce prix. Les produits sans prix partenaire sont visibles mais non commandables.', 'presellia-partner-bridge' ); ?></p>
@@ -198,7 +231,7 @@ $all_done = $has_password && $portal_page_ok && $has_prices;
             </div>
 
             <div class="ppb-gs-flow-step">
-                <div class="ppb-gs-step-num">6</div>
+                <div class="ppb-gs-step-num">4</div>
                 <div>
                     <strong><?php esc_html_e( 'Il compose sa commande et valide', 'presellia-partner-bridge' ); ?></strong>
                     <p><?php esc_html_e( 'Le mini-panier intégré permet d\'ajouter des quantités. En cliquant "Commander", il est redirigé vers le checkout WooCommerce. Les prix partenaires sont appliqués automatiquement grâce au cookie de session.', 'presellia-partner-bridge' ); ?></p>
@@ -206,7 +239,7 @@ $all_done = $has_password && $portal_page_ok && $has_prices;
             </div>
 
             <div class="ppb-gs-flow-step">
-                <div class="ppb-gs-step-num">7</div>
+                <div class="ppb-gs-step-num">5</div>
                 <div>
                     <strong><?php esc_html_e( 'La commande WooCommerce est passée normalement', 'presellia-partner-bridge' ); ?></strong>
                     <p><?php esc_html_e( 'PPB ne modifie pas le checkout ni les emails WooCommerce. Vous gérez les commandes partenaires depuis WooCommerce → Commandes.', 'presellia-partner-bridge' ); ?></p>
@@ -220,10 +253,15 @@ $all_done = $has_password && $portal_page_ok && $has_prices;
     <div class="ppb-gs-card">
         <h2><?php esc_html_e( 'Concepts clés', 'presellia-partner-bridge' ); ?></h2>
 
-        <h3><?php esc_html_e( 'Prix partenaire vs prix public', 'presellia-partner-bridge' ); ?></h3>
-        <p><?php esc_html_e( 'Le prix partenaire est stocké sur chaque produit (meta _ppb_partner_price). Il remplace le prix WooCommerce uniquement dans le panier et au checkout, uniquement pour les sessions authentifiées PPB. Sur le reste du site (pages produit, boutique), les prix publics WooCommerce sont inchangés.', 'presellia-partner-bridge' ); ?></p>
+        <h3><?php esc_html_e( 'Deux shortcodes, deux pages distinctes', 'presellia-partner-bridge' ); ?></h3>
+        <p>
+            <?php esc_html_e( '[ppb_catalog] et [ppb_portal] sont indépendants. Vous pouvez avoir les deux sur des pages différentes, ou n\'utiliser que l\'un des deux. Le catalogue public peut être rendu accessible depuis votre navigation principale sans exposer l\'espace revendeur.', 'presellia-partner-bridge' ); ?>
+        </p>
 
-        <h3><?php esc_html_e( 'Où saisir les prix ?', 'presellia-partner-bridge' ); ?></h3>
+        <h3><?php esc_html_e( 'Prix partenaire vs prix public', 'presellia-partner-bridge' ); ?></h3>
+        <p><?php esc_html_e( 'Le prix partenaire est stocké sur chaque produit (meta _ppb_partner_price). Il remplace le prix WooCommerce uniquement dans le panier et au checkout, uniquement pour les sessions authentifiées PPB. Sur le reste du site (pages produit, boutique, catalogue public), les prix publics WooCommerce sont inchangés.', 'presellia-partner-bridge' ); ?></p>
+
+        <h3><?php esc_html_e( 'Où saisir les prix partenaires ?', 'presellia-partner-bridge' ); ?></h3>
         <p>
             <?php esc_html_e( 'Trois endroits possibles :', 'presellia-partner-bridge' ); ?>
         </p>
@@ -247,7 +285,7 @@ $all_done = $has_password && $portal_page_ok && $has_prices;
 
         <h3><?php esc_html_e( 'Durée de vie du token', 'presellia-partner-bridge' ); ?></h3>
         <p>
-            <?php esc_html_e( 'Configurable dans PPB Réglages (actuellement :', 'presellia-partner-bridge' ); ?>
+            <?php esc_html_e( 'Configurable dans PPB Réglages → Portail Partenaire (actuellement :', 'presellia-partner-bridge' ); ?>
             <strong><?php echo esc_html( get_option( 'ppb_token_ttl', 30 ) ); ?></strong>
             <?php esc_html_e( 'jours). 0 = session permanente (ne demande jamais le mot de passe). Changer le mot de passe partenaire révoque immédiatement tous les tokens actifs.', 'presellia-partner-bridge' ); ?>
         </p>

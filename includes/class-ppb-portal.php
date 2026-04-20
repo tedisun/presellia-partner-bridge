@@ -5,22 +5,21 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Gère le rendu de la page portail partenaire.
+ * Gère le rendu des pages portail partenaire et catalogue public.
  *
- * Shortcode : [ppb_portal]
- *
- * Comportement :
- *  - Non authentifié → modale mot de passe (catalogue chargé en arrière-plan)
- *  - Authentifié → tableau catalogue avec prix partenaires + mini-panier + bouton commander
+ * Shortcodes :
+ *  - [ppb_portal]  → Espace Revendeur (protégé par mot de passe)
+ *  - [ppb_catalog] → Catalogue public (accès libre, prix publics + stock)
  */
 class PPB_Portal {
 
     public function __construct() {
-        add_shortcode( 'ppb_portal', [ $this, 'render_shortcode' ] );
+        add_shortcode( 'ppb_portal',  [ $this, 'render_shortcode' ] );
+        add_shortcode( 'ppb_catalog', [ $this, 'render_catalog_shortcode' ] );
 
         add_action( 'wp_enqueue_scripts', [ $this, 'enqueue_scripts' ] );
 
-        // AJAX : chargement du catalogue.
+        // AJAX : chargement du catalogue partenaire.
         add_action( 'wp_ajax_nopriv_ppb_load_catalog', [ $this, 'ajax_load_catalog' ] );
         add_action( 'wp_ajax_ppb_load_catalog',        [ $this, 'ajax_load_catalog' ] );
 
@@ -38,9 +37,13 @@ class PPB_Portal {
     // -------------------------------------------------------------------------
 
     public function enqueue_scripts(): void {
-        $portal_page_id = (int) get_option( 'ppb_portal_page_id', 0 );
+        $portal_page_id  = (int) get_option( 'ppb_portal_page_id',  0 );
+        $catalog_page_id = (int) get_option( 'ppb_catalog_page_id', 0 );
 
-        if ( ! $portal_page_id || ! is_page( $portal_page_id ) ) {
+        $is_portal  = $portal_page_id  > 0 && is_page( $portal_page_id );
+        $is_catalog = $catalog_page_id > 0 && is_page( $catalog_page_id );
+
+        if ( ! $is_portal && ! $is_catalog ) {
             return;
         }
 
@@ -61,22 +64,22 @@ class PPB_Portal {
 
         // URL de partage (avec token) pour les utilisateurs déjà authentifiés.
         $share_url = '';
-        if ( PPB_Auth::is_authenticated() && ! empty( $_COOKIE[ PPB_Auth::COOKIE_NAME ] ) ) {
+        if ( $is_portal && PPB_Auth::is_authenticated() && ! empty( $_COOKIE[ PPB_Auth::COOKIE_NAME ] ) ) {
             $raw_token = sanitize_text_field( wp_unslash( $_COOKIE[ PPB_Auth::COOKIE_NAME ] ) );
-            $share_url = add_query_arg( 't', $raw_token, get_permalink( (int) get_option( 'ppb_portal_page_id' ) ) );
+            $share_url = add_query_arg( 't', $raw_token, get_permalink( $portal_page_id ) );
         }
 
         wp_localize_script( 'ppb-portal', 'ppbPortal', [
-            'ajaxUrl'           => admin_url( 'admin-ajax.php' ),
-            'nonce'             => wp_create_nonce( 'ppb_portal_nonce' ),
-            'isAuth'            => PPB_Auth::is_authenticated() ? '1' : '0',
-            'cookieName'        => PPB_Auth::COOKIE_NAME,
-            'shareUrl'          => $share_url,
-            'tokenTtlDays'      => (int) get_option( 'ppb_token_ttl', 30 ),
-            'currency'          => get_woocommerce_currency_symbol(),
-            'checkoutUrl'       => wc_get_checkout_url(),
-            'tutorialVideoUrl'  => esc_url( get_option( 'ppb_tutorial_video_url', '' ) ),
-            'i18n'          => [
+            'ajaxUrl'          => admin_url( 'admin-ajax.php' ),
+            'nonce'            => wp_create_nonce( 'ppb_portal_nonce' ),
+            'isAuth'           => ( $is_portal && PPB_Auth::is_authenticated() ) ? '1' : '0',
+            'cookieName'       => PPB_Auth::COOKIE_NAME,
+            'shareUrl'         => $share_url,
+            'tokenTtlDays'     => (int) get_option( 'ppb_token_ttl', 30 ),
+            'currency'         => get_woocommerce_currency_symbol(),
+            'checkoutUrl'      => wc_get_checkout_url(),
+            'tutorialVideoUrl' => $is_portal ? esc_url( get_option( 'ppb_tutorial_video_url', '' ) ) : '',
+            'i18n'             => [
                 'passwordPlaceholder' => __( 'Mot de passe partenaire', 'presellia-partner-bridge' ),
                 'passwordSubmit'      => __( 'Accéder', 'presellia-partner-bridge' ),
                 'wrongPassword'       => __( 'Mot de passe incorrect. Réessayez.', 'presellia-partner-bridge' ),
@@ -95,8 +98,6 @@ class PPB_Portal {
                 'linkCopied'          => __( 'Lien copié !', 'presellia-partner-bridge' ),
                 'logout'              => __( 'Se déconnecter', 'presellia-partner-bridge' ),
                 'noPartnerPrice'      => __( 'Prix non défini', 'presellia-partner-bridge' ),
-                'tabCatalog'          => __( 'Catalogue', 'presellia-partner-bridge' ),
-                'tabPartner'          => __( 'Espace Revendeur', 'presellia-partner-bridge' ),
                 'stockIn'             => __( 'En stock', 'presellia-partner-bridge' ),
                 'stockOut'            => __( 'Rupture', 'presellia-partner-bridge' ),
                 'stockOrder'          => __( 'Sur commande', 'presellia-partner-bridge' ),
@@ -106,7 +107,7 @@ class PPB_Portal {
     }
 
     // -------------------------------------------------------------------------
-    // Shortcode [ppb_portal]
+    // Shortcode [ppb_portal] — Espace Revendeur
     // -------------------------------------------------------------------------
 
     public function render_shortcode(): string {
@@ -126,144 +127,101 @@ class PPB_Portal {
                 <h1 class="ppb-portal-title"><?php echo esc_html( $title ); ?></h1>
             </div>
 
-            <!-- Onglets de navigation -->
-            <nav class="ppb-tabs" role="tablist">
-                <button class="ppb-tab ppb-tab-active" data-tab="public" role="tab">
-                    📋 <?php esc_html_e( 'Catalogue', 'presellia-partner-bridge' ); ?>
-                </button>
-                <button class="ppb-tab" data-tab="partner" role="tab">
-                    🤝 <?php esc_html_e( 'Espace Revendeur', 'presellia-partner-bridge' ); ?>
-                </button>
-            </nav>
-
-            <!-- Onglet : Catalogue public -->
-            <div id="ppb-tab-public" class="ppb-tab-pane">
-                <div class="ppb-toolbar">
-                    <input type="text" id="ppb-public-search" class="ppb-input ppb-search"
-                        placeholder="<?php esc_attr_e( 'Rechercher un produit…', 'presellia-partner-bridge' ); ?>">
+            <?php if ( ! $has_pwd ) : ?>
+                <!-- Configuration manquante -->
+                <div class="ppb-notice ppb-notice-error">
+                    <?php esc_html_e( 'Le portail n\'est pas encore configuré. Veuillez définir un mot de passe dans les réglages PPB.', 'presellia-partner-bridge' ); ?>
                 </div>
-                <div id="ppb-public-catalog-wrapper">
-                    <div id="ppb-public-loading" class="ppb-loading">
-                        <span class="ppb-spinner"></span>
-                        <?php esc_html_e( 'Chargement du catalogue…', 'presellia-partner-bridge' ); ?>
+            <?php else : ?>
+
+                <!-- Modale mot de passe (cachée si déjà authentifié) -->
+                <div id="ppb-auth-modal" class="ppb-auth-modal <?php echo PPB_Auth::is_authenticated() ? 'ppb-hidden' : ''; ?>">
+                    <div class="ppb-auth-card">
+                        <p class="ppb-auth-intro">
+                            <?php esc_html_e( 'Espace réservé aux revendeurs partenaires.', 'presellia-partner-bridge' ); ?>
+                        </p>
+                        <div class="ppb-auth-form">
+                            <input
+                                type="password"
+                                id="ppb-password-input"
+                                class="ppb-input"
+                                autocomplete="current-password"
+                                placeholder="<?php esc_attr_e( 'Mot de passe partenaire', 'presellia-partner-bridge' ); ?>"
+                            >
+                            <button id="ppb-password-submit" class="ppb-btn ppb-btn-primary">
+                                <?php esc_html_e( 'Accéder', 'presellia-partner-bridge' ); ?>
+                            </button>
+                        </div>
+                        <p id="ppb-auth-error" class="ppb-auth-error ppb-hidden"></p>
+                        <?php
+                        $access_url = get_option( 'ppb_access_request_url', '' );
+                        if ( $access_url ) :
+                        ?>
+                        <p class="ppb-auth-request">
+                            <?php esc_html_e( 'Pas encore partenaire ?', 'presellia-partner-bridge' ); ?>
+                            <a href="<?php echo esc_url( $access_url ); ?>">
+                                <?php esc_html_e( 'Demander l\'accès', 'presellia-partner-bridge' ); ?>
+                            </a>
+                        </p>
+                        <?php endif; ?>
                     </div>
-                    <table id="ppb-public-table" class="ppb-catalog-table ppb-hidden">
-                        <thead>
-                            <tr>
-                                <th class="ppb-col-thumb"></th>
-                                <th><?php esc_html_e( 'Produit', 'presellia-partner-bridge' ); ?></th>
-                                <th class="ppb-col-num"><?php esc_html_e( 'Prix public', 'presellia-partner-bridge' ); ?></th>
-                                <th class="ppb-col-stock"><?php esc_html_e( 'Stock', 'presellia-partner-bridge' ); ?></th>
-                            </tr>
-                        </thead>
-                        <tbody id="ppb-public-body"></tbody>
-                    </table>
-                    <p id="ppb-public-empty" class="ppb-empty-msg ppb-hidden">
-                        <?php esc_html_e( 'Aucun produit disponible.', 'presellia-partner-bridge' ); ?>
-                    </p>
                 </div>
-            </div>
 
-            <!-- Onglet : Espace Revendeur -->
-            <div id="ppb-tab-partner" class="ppb-tab-pane ppb-hidden">
+                <!-- Contenu du portail (visible une fois authentifié) -->
+                <div id="ppb-content" class="<?php echo PPB_Auth::is_authenticated() ? '' : 'ppb-hidden'; ?>">
 
-                <?php if ( ! $has_pwd ) : ?>
-                    <!-- Configuration manquante -->
-                    <div class="ppb-notice ppb-notice-error">
-                        <?php esc_html_e( 'Le portail n\'est pas encore configuré. Veuillez définir un mot de passe dans les réglages PPB.', 'presellia-partner-bridge' ); ?>
-                    </div>
-                <?php else : ?>
-
-                    <!-- Modale mot de passe (cachée si déjà authentifié) -->
-                    <div id="ppb-auth-modal" class="ppb-auth-modal <?php echo PPB_Auth::is_authenticated() ? 'ppb-hidden' : ''; ?>">
-                        <div class="ppb-auth-card">
-                            <p class="ppb-auth-intro">
-                                <?php esc_html_e( 'Espace réservé aux revendeurs partenaires.', 'presellia-partner-bridge' ); ?>
-                            </p>
-                            <div class="ppb-auth-form">
-                                <input
-                                    type="password"
-                                    id="ppb-password-input"
-                                    class="ppb-input"
-                                    autocomplete="current-password"
-                                    placeholder="<?php esc_attr_e( 'Mot de passe partenaire', 'presellia-partner-bridge' ); ?>"
-                                >
-                                <button id="ppb-password-submit" class="ppb-btn ppb-btn-primary">
-                                    <?php esc_html_e( 'Accéder', 'presellia-partner-bridge' ); ?>
-                                </button>
-                            </div>
-                            <p id="ppb-auth-error" class="ppb-auth-error ppb-hidden"></p>
-                            <?php
-                            $access_url = get_option( 'ppb_access_request_url', '' );
-                            if ( $access_url ) :
-                            ?>
-                            <p class="ppb-auth-request">
-                                <?php esc_html_e( 'Pas encore partenaire ?', 'presellia-partner-bridge' ); ?>
-                                <a href="<?php echo esc_url( $access_url ); ?>">
-                                    <?php esc_html_e( 'Demander l\'accès', 'presellia-partner-bridge' ); ?>
-                                </a>
-                            </p>
-                            <?php endif; ?>
+                    <!-- Barre d'actions -->
+                    <div class="ppb-toolbar">
+                        <input type="text" id="ppb-search" class="ppb-input ppb-search" placeholder="<?php esc_attr_e( 'Rechercher un produit…', 'presellia-partner-bridge' ); ?>">
+                        <div class="ppb-toolbar-actions">
+                            <button id="ppb-copy-link" class="ppb-btn ppb-btn-ghost" title="<?php esc_attr_e( 'Copier le lien d\'accès rapide', 'presellia-partner-bridge' ); ?>">
+                                🔗 <?php esc_html_e( 'Partager l\'accès', 'presellia-partner-bridge' ); ?>
+                            </button>
+                            <button id="ppb-logout" class="ppb-btn ppb-btn-ghost">
+                                <?php esc_html_e( 'Se déconnecter', 'presellia-partner-bridge' ); ?>
+                            </button>
                         </div>
                     </div>
 
-                    <!-- Contenu du portail (visible une fois authentifié) -->
-                    <div id="ppb-content" class="<?php echo PPB_Auth::is_authenticated() ? '' : 'ppb-hidden'; ?>">
-
-                        <!-- Barre d'actions -->
-                        <div class="ppb-toolbar">
-                            <input type="text" id="ppb-search" class="ppb-input ppb-search" placeholder="<?php esc_attr_e( 'Rechercher un produit…', 'presellia-partner-bridge' ); ?>">
-                            <div class="ppb-toolbar-actions">
-                                <button id="ppb-copy-link" class="ppb-btn ppb-btn-ghost" title="<?php esc_attr_e( 'Copier le lien d\'accès rapide', 'presellia-partner-bridge' ); ?>">
-                                    🔗 <?php esc_html_e( 'Partager l\'accès', 'presellia-partner-bridge' ); ?>
-                                </button>
-                                <button id="ppb-logout" class="ppb-btn ppb-btn-ghost">
-                                    <?php esc_html_e( 'Se déconnecter', 'presellia-partner-bridge' ); ?>
-                                </button>
-                            </div>
+                    <!-- Catalogue (chargé via AJAX) -->
+                    <div id="ppb-catalog-wrapper">
+                        <div id="ppb-catalog-loading" class="ppb-loading">
+                            <span class="ppb-spinner"></span>
+                            <?php esc_html_e( 'Chargement du catalogue…', 'presellia-partner-bridge' ); ?>
                         </div>
+                        <table id="ppb-catalog-table" class="ppb-catalog-table ppb-hidden">
+                            <thead>
+                                <tr>
+                                    <th class="ppb-col-thumb"></th>
+                                    <th><?php esc_html_e( 'Produit', 'presellia-partner-bridge' ); ?></th>
+                                    <th class="ppb-col-num ppb-col-partner"><?php esc_html_e( 'Prix partenaire', 'presellia-partner-bridge' ); ?></th>
+                                    <th class="ppb-col-num"><?php esc_html_e( 'Qté', 'presellia-partner-bridge' ); ?></th>
+                                    <th class="ppb-col-action"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="ppb-catalog-body"></tbody>
+                        </table>
+                        <p id="ppb-catalog-empty" class="ppb-empty-msg ppb-hidden">
+                            <?php esc_html_e( 'Aucun produit disponible.', 'presellia-partner-bridge' ); ?>
+                        </p>
+                    </div>
 
-                        <!-- Catalogue (chargé via AJAX) -->
-                        <div id="ppb-catalog-wrapper">
-                            <div id="ppb-catalog-loading" class="ppb-loading">
-                                <span class="ppb-spinner"></span>
-                                <?php esc_html_e( 'Chargement du catalogue…', 'presellia-partner-bridge' ); ?>
-                            </div>
-                            <table id="ppb-catalog-table" class="ppb-catalog-table ppb-hidden">
-                                <thead>
-                                    <tr>
-                                        <th class="ppb-col-thumb"></th>
-                                        <th><?php esc_html_e( 'Produit', 'presellia-partner-bridge' ); ?></th>
-                                        <th class="ppb-col-num ppb-col-partner"><?php esc_html_e( 'Prix partenaire', 'presellia-partner-bridge' ); ?></th>
-                                        <th class="ppb-col-num"><?php esc_html_e( 'Qté', 'presellia-partner-bridge' ); ?></th>
-                                        <th class="ppb-col-action"></th>
-                                    </tr>
-                                </thead>
-                                <tbody id="ppb-catalog-body"></tbody>
+                    <!-- Panneau détail de la sélection (slide-up au-dessus de la barre) -->
+                    <div id="ppb-cart-panel" class="ppb-cart-panel">
+                        <div class="ppb-cart-panel-header">
+                            <span class="ppb-cart-panel-title"><?php esc_html_e( 'Ma sélection', 'presellia-partner-bridge' ); ?></span>
+                            <button id="ppb-cart-panel-close" class="ppb-cart-panel-close" title="<?php esc_attr_e( 'Fermer', 'presellia-partner-bridge' ); ?>">×</button>
+                        </div>
+                        <div class="ppb-cart-panel-body">
+                            <table class="ppb-cart-table">
+                                <tbody id="ppb-cart-body"></tbody>
                             </table>
-                            <p id="ppb-catalog-empty" class="ppb-empty-msg ppb-hidden">
-                                <?php esc_html_e( 'Aucun produit disponible.', 'presellia-partner-bridge' ); ?>
-                            </p>
                         </div>
+                    </div>
 
-                        <!-- Panneau détail de la sélection (slide-up au-dessus de la barre) -->
-                        <div id="ppb-cart-panel" class="ppb-cart-panel">
-                            <div class="ppb-cart-panel-header">
-                                <span class="ppb-cart-panel-title"><?php esc_html_e( 'Ma sélection', 'presellia-partner-bridge' ); ?></span>
-                                <button id="ppb-cart-panel-close" class="ppb-cart-panel-close" title="<?php esc_attr_e( 'Fermer', 'presellia-partner-bridge' ); ?>">×</button>
-                            </div>
-                            <div class="ppb-cart-panel-body">
-                                <table class="ppb-cart-table">
-                                    <tbody id="ppb-cart-body"></tbody>
-                                </table>
-                            </div>
-                        </div>
+                </div><!-- #ppb-content -->
 
-                    </div><!-- #ppb-content -->
-
-                <?php endif; ?>
-
-            </div><!-- #ppb-tab-partner -->
+            <?php endif; ?>
 
         </div><!-- #ppb-portal -->
 
@@ -284,7 +242,47 @@ class PPB_Portal {
     }
 
     // -------------------------------------------------------------------------
-    // AJAX : chargement du catalogue
+    // Shortcode [ppb_catalog] — Catalogue public
+    // -------------------------------------------------------------------------
+
+    public function render_catalog_shortcode(): string {
+        ob_start();
+        ?>
+        <div id="ppb-catalog" class="ppb-portal">
+
+            <div class="ppb-toolbar">
+                <input type="text" id="ppb-public-search" class="ppb-input ppb-search"
+                    placeholder="<?php esc_attr_e( 'Rechercher un produit…', 'presellia-partner-bridge' ); ?>">
+            </div>
+
+            <div id="ppb-public-catalog-wrapper">
+                <div id="ppb-public-loading" class="ppb-loading">
+                    <span class="ppb-spinner"></span>
+                    <?php esc_html_e( 'Chargement du catalogue…', 'presellia-partner-bridge' ); ?>
+                </div>
+                <table id="ppb-public-table" class="ppb-catalog-table ppb-hidden">
+                    <thead>
+                        <tr>
+                            <th class="ppb-col-thumb"></th>
+                            <th><?php esc_html_e( 'Produit', 'presellia-partner-bridge' ); ?></th>
+                            <th class="ppb-col-num"><?php esc_html_e( 'Prix public', 'presellia-partner-bridge' ); ?></th>
+                            <th class="ppb-col-stock"><?php esc_html_e( 'Stock', 'presellia-partner-bridge' ); ?></th>
+                        </tr>
+                    </thead>
+                    <tbody id="ppb-public-body"></tbody>
+                </table>
+                <p id="ppb-public-empty" class="ppb-empty-msg ppb-hidden">
+                    <?php esc_html_e( 'Aucun produit disponible.', 'presellia-partner-bridge' ); ?>
+                </p>
+            </div>
+
+        </div><!-- #ppb-catalog -->
+        <?php
+        return ob_get_clean();
+    }
+
+    // -------------------------------------------------------------------------
+    // AJAX : chargement du catalogue partenaire
     // -------------------------------------------------------------------------
 
     public function ajax_load_catalog(): void {

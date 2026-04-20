@@ -75,17 +75,17 @@ includes/
   class-ppb-auth.php                → token/cookie, AJAX validate password/revoke
   class-ppb-logger.php              → table ppb_logs, méthodes statiques info/warning/error
   class-ppb-pricing.php             → meta _ppb_partner_price, hook wc_before_calculate_totals, get_catalog()
-  class-ppb-portal.php              → shortcode [ppb_portal], AJAX catalog + checkout
+  class-ppb-portal.php              → shortcode [ppb_portal] (espace revendeur) + [ppb_catalog] (catalogue public), AJAX catalog + checkout
   class-ppb-cron.php                → cron ppb_weekly_cleanup : purge automatique des logs
   api/
     class-ppb-api.php               → REST endpoints ppb/v1/* (auth: X-PPB-API-Key)
 admin/
   class-ppb-admin.php               → bulk price editor, metaboxes produit/variation
-  class-ppb-settings.php            → réglages, dashboard rapide, gestion mdp/tokens/logs
+  class-ppb-settings.php            → réglages (onglets : Portail Partenaire / Catalogue Public), dashboard rapide, gestion mdp/tokens/logs
 assets/
-  css/ppb-portal.css                → styles page portail
+  css/ppb-portal.css                → styles page portail [ppb_portal] et catalogue public [ppb_catalog]
   css/ppb-admin.css                 → styles pages admin
-  js/ppb-portal.js                  → modale mdp, catalogue AJAX, mini-panier, checkout
+  js/ppb-portal.js                  → modale mdp, catalogue AJAX, mini-panier, checkout + catalogue public (init conditionnelle sur #ppb-portal / #ppb-catalog)
   js/ppb-admin.js                   → bulk save, generate API key, revoke tokens, purge logs
 ```
 
@@ -121,10 +121,10 @@ Header d'authentification : `X-PPB-API-Key: {clé depuis les réglages PPB}`
 ## Mise en service (checklist)
 
 1. Activer le plugin sur presellia.com
-2. WooCommerce > PPB Réglages → définir le mot de passe
+2. WooCommerce > PPB Réglages (onglet Portail Partenaire) → définir le mot de passe
 3. WooCommerce > PPB Réglages → générer une clé API MCP
-4. Créer une page WP, y coller `[ppb_portal]`, la publier
-5. WooCommerce > PPB Réglages → sélectionner cette page dans "Page portail"
+4. Créer une page WP, y coller `[ppb_portal]`, la publier → sélectionner dans PPB Réglages → Page portail
+5. (Optionnel) Créer une page WP, y coller `[ppb_catalog]`, la publier → sélectionner dans PPB Réglages → Catalogue Public → Page catalogue
 6. WooCommerce > Prix partenaires → saisir les prix partenaires pour chaque produit
 7. Tester : visiter la page portail, entrer le mot de passe, vérifier le catalogue
 
