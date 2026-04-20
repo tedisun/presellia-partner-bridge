@@ -5,11 +5,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Gère le rendu des pages portail partenaire et catalogue public.
+ * Gère le rendu de la page portail partenaire.
  *
- * Shortcodes :
- *  - [ppb_portal]  → Espace Revendeur (protégé par mot de passe)
- *  - [ppb_catalog] → Catalogue public (accès libre, prix publics + stock)
+ * Shortcode : [ppb_portal]  → espace revendeur protégé par mot de passe
+ * Shortcode : [ppb_catalog] → catalogue public accès libre (prix publics)
  */
 class PPB_Portal {
 
@@ -19,17 +18,17 @@ class PPB_Portal {
 
         add_action( 'wp_enqueue_scripts', [ $this, 'enqueue_scripts' ] );
 
-        // AJAX : chargement du catalogue partenaire.
+        // AJAX : chargement du catalogue partenaire (authentifié).
         add_action( 'wp_ajax_nopriv_ppb_load_catalog', [ $this, 'ajax_load_catalog' ] );
         add_action( 'wp_ajax_ppb_load_catalog',        [ $this, 'ajax_load_catalog' ] );
+
+        // AJAX : chargement du catalogue public (sans authentification).
+        add_action( 'wp_ajax_nopriv_ppb_load_public_catalog', [ $this, 'ajax_load_public_catalog' ] );
+        add_action( 'wp_ajax_ppb_load_public_catalog',        [ $this, 'ajax_load_public_catalog' ] );
 
         // AJAX : ajout au panier WC + redirection checkout.
         add_action( 'wp_ajax_nopriv_ppb_checkout', [ $this, 'ajax_checkout' ] );
         add_action( 'wp_ajax_ppb_checkout',        [ $this, 'ajax_checkout' ] );
-
-        // AJAX : catalogue public (sans authentification).
-        add_action( 'wp_ajax_nopriv_ppb_load_public_catalog', [ $this, 'ajax_load_public_catalog' ] );
-        add_action( 'wp_ajax_ppb_load_public_catalog',        [ $this, 'ajax_load_public_catalog' ] );
     }
 
     // -------------------------------------------------------------------------
@@ -37,13 +36,13 @@ class PPB_Portal {
     // -------------------------------------------------------------------------
 
     public function enqueue_scripts(): void {
-        $portal_page_id  = (int) get_option( 'ppb_portal_page_id',  0 );
+        $portal_page_id  = (int) get_option( 'ppb_portal_page_id', 0 );
         $catalog_page_id = (int) get_option( 'ppb_catalog_page_id', 0 );
 
-        $is_portal  = $portal_page_id  > 0 && is_page( $portal_page_id );
-        $is_catalog = $catalog_page_id > 0 && is_page( $catalog_page_id );
+        $on_portal  = $portal_page_id  && is_page( $portal_page_id );
+        $on_catalog = $catalog_page_id && is_page( $catalog_page_id );
 
-        if ( ! $is_portal && ! $is_catalog ) {
+        if ( ! $on_portal && ! $on_catalog ) {
             return;
         }
 
@@ -64,22 +63,22 @@ class PPB_Portal {
 
         // URL de partage (avec token) pour les utilisateurs déjà authentifiés.
         $share_url = '';
-        if ( $is_portal && PPB_Auth::is_authenticated() && ! empty( $_COOKIE[ PPB_Auth::COOKIE_NAME ] ) ) {
+        if ( PPB_Auth::is_authenticated() && ! empty( $_COOKIE[ PPB_Auth::COOKIE_NAME ] ) ) {
             $raw_token = sanitize_text_field( wp_unslash( $_COOKIE[ PPB_Auth::COOKIE_NAME ] ) );
-            $share_url = add_query_arg( 't', $raw_token, get_permalink( $portal_page_id ) );
+            $share_url = add_query_arg( 't', $raw_token, get_permalink( (int) get_option( 'ppb_portal_page_id' ) ) );
         }
 
         wp_localize_script( 'ppb-portal', 'ppbPortal', [
-            'ajaxUrl'          => admin_url( 'admin-ajax.php' ),
-            'nonce'            => wp_create_nonce( 'ppb_portal_nonce' ),
-            'isAuth'           => ( $is_portal && PPB_Auth::is_authenticated() ) ? '1' : '0',
-            'cookieName'       => PPB_Auth::COOKIE_NAME,
-            'shareUrl'         => $share_url,
-            'tokenTtlDays'     => (int) get_option( 'ppb_token_ttl', 30 ),
-            'currency'         => get_woocommerce_currency_symbol(),
-            'checkoutUrl'      => wc_get_checkout_url(),
-            'tutorialVideoUrl' => $is_portal ? esc_url( get_option( 'ppb_tutorial_video_url', '' ) ) : '',
-            'i18n'             => [
+            'ajaxUrl'           => admin_url( 'admin-ajax.php' ),
+            'nonce'             => wp_create_nonce( 'ppb_portal_nonce' ),
+            'isAuth'            => PPB_Auth::is_authenticated() ? '1' : '0',
+            'cookieName'        => PPB_Auth::COOKIE_NAME,
+            'shareUrl'          => $share_url,
+            'tokenTtlDays'      => (int) get_option( 'ppb_token_ttl', 30 ),
+            'currency'          => get_woocommerce_currency_symbol(),
+            'checkoutUrl'       => wc_get_checkout_url(),
+            'tutorialVideoUrl'  => esc_url( get_option( 'ppb_tutorial_video_url', '' ) ),
+            'i18n'          => [
                 'passwordPlaceholder' => __( 'Mot de passe partenaire', 'presellia-partner-bridge' ),
                 'passwordSubmit'      => __( 'Accéder', 'presellia-partner-bridge' ),
                 'wrongPassword'       => __( 'Mot de passe incorrect. Réessayez.', 'presellia-partner-bridge' ),
@@ -98,16 +97,12 @@ class PPB_Portal {
                 'linkCopied'          => __( 'Lien copié !', 'presellia-partner-bridge' ),
                 'logout'              => __( 'Se déconnecter', 'presellia-partner-bridge' ),
                 'noPartnerPrice'      => __( 'Prix non défini', 'presellia-partner-bridge' ),
-                'stockIn'             => __( 'En stock', 'presellia-partner-bridge' ),
-                'stockOut'            => __( 'Rupture', 'presellia-partner-bridge' ),
-                'stockOrder'          => __( 'Sur commande', 'presellia-partner-bridge' ),
-                'priceFrom'           => __( 'À partir de', 'presellia-partner-bridge' ),
             ],
         ] );
     }
 
     // -------------------------------------------------------------------------
-    // Shortcode [ppb_portal] — Espace Revendeur
+    // Shortcode [ppb_portal]
     // -------------------------------------------------------------------------
 
     public function render_shortcode(): string {
@@ -242,36 +237,38 @@ class PPB_Portal {
     }
 
     // -------------------------------------------------------------------------
-    // Shortcode [ppb_catalog] — Catalogue public
+    // Shortcode [ppb_catalog] — catalogue public accès libre
     // -------------------------------------------------------------------------
 
     public function render_catalog_shortcode(): string {
         ob_start();
         ?>
-        <div id="ppb-catalog" class="ppb-portal">
+        <div id="ppb-catalog" class="ppb-public-catalog">
 
-            <div class="ppb-toolbar">
-                <input type="text" id="ppb-public-search" class="ppb-input ppb-search"
-                    placeholder="<?php esc_attr_e( 'Rechercher un produit…', 'presellia-partner-bridge' ); ?>">
+            <!-- Barre de recherche + filtre catégorie -->
+            <div class="ppb-toolbar ppb-catalog-toolbar">
+                <input type="text" id="ppb-pub-search" class="ppb-input ppb-search" placeholder="<?php esc_attr_e( 'Rechercher un produit…', 'presellia-partner-bridge' ); ?>">
+                <div id="ppb-pub-cat-filter-wrap"></div>
             </div>
 
-            <div id="ppb-public-catalog-wrapper">
-                <div id="ppb-public-loading" class="ppb-loading">
+            <!-- Tableau catalogue (chargé via AJAX) -->
+            <div id="ppb-pub-catalog-wrapper">
+                <div id="ppb-pub-catalog-loading" class="ppb-loading">
                     <span class="ppb-spinner"></span>
                     <?php esc_html_e( 'Chargement du catalogue…', 'presellia-partner-bridge' ); ?>
                 </div>
-                <table id="ppb-public-table" class="ppb-catalog-table ppb-hidden">
+                <table id="ppb-pub-catalog-table" class="ppb-catalog-table ppb-hidden">
                     <thead>
                         <tr>
                             <th class="ppb-col-thumb"></th>
                             <th><?php esc_html_e( 'Produit', 'presellia-partner-bridge' ); ?></th>
                             <th class="ppb-col-num"><?php esc_html_e( 'Prix public', 'presellia-partner-bridge' ); ?></th>
-                            <th class="ppb-col-stock"><?php esc_html_e( 'Stock', 'presellia-partner-bridge' ); ?></th>
+                            <th><?php esc_html_e( 'Disponibilité', 'presellia-partner-bridge' ); ?></th>
                         </tr>
                     </thead>
-                    <tbody id="ppb-public-body"></tbody>
+                    <tbody id="ppb-pub-catalog-body"></tbody>
                 </table>
-                <p id="ppb-public-empty" class="ppb-empty-msg ppb-hidden">
+                <p id="ppb-pub-catalog-empty" class="ppb-empty-msg ppb-hidden">
                     <?php esc_html_e( 'Aucun produit disponible.', 'presellia-partner-bridge' ); ?>
                 </p>
             </div>
@@ -282,7 +279,7 @@ class PPB_Portal {
     }
 
     // -------------------------------------------------------------------------
-    // AJAX : chargement du catalogue partenaire
+    // AJAX : chargement du catalogue partenaire (authentifié)
     // -------------------------------------------------------------------------
 
     public function ajax_load_catalog(): void {
@@ -295,6 +292,18 @@ class PPB_Portal {
         $catalog = PPB_Pricing::get_catalog();
 
         PPB_Logger::info( 'catalog_loaded', 'Catalogue chargé', [ 'products' => count( $catalog ) ] );
+
+        wp_send_json_success( [ 'catalog' => $catalog ] );
+    }
+
+    // -------------------------------------------------------------------------
+    // AJAX : chargement du catalogue public (sans authentification)
+    // -------------------------------------------------------------------------
+
+    public function ajax_load_public_catalog(): void {
+        check_ajax_referer( 'ppb_portal_nonce', 'nonce' );
+
+        $catalog = PPB_Pricing::get_catalog();
 
         wp_send_json_success( [ 'catalog' => $catalog ] );
     }
@@ -354,17 +363,5 @@ class PPB_Portal {
             'checkout_url' => wc_get_checkout_url(),
             'added'        => $added,
         ] );
-    }
-
-    // -------------------------------------------------------------------------
-    // AJAX : catalogue public (sans authentification)
-    // -------------------------------------------------------------------------
-
-    public function ajax_load_public_catalog(): void {
-        check_ajax_referer( 'ppb_portal_nonce', 'nonce' );
-
-        $catalog = PPB_Pricing::get_catalog();
-
-        wp_send_json_success( [ 'catalog' => $catalog ] );
     }
 }

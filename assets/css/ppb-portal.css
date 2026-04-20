@@ -170,6 +170,11 @@
     color: #7a5700;
     border: 1px solid #fce08a;
 }
+.ppb-stock-in {
+    background: #e6f4ea;
+    color: #1e6e37;
+    border: 1px solid #a8d5b5;
+}
 .ppb-col-action { min-width: 90px; }
 
 /* ---- Bouton paliers (portail) ---- */
@@ -456,19 +461,32 @@
     border: 0;
 }
 
-/* ============================================================
-   CATALOGUE PUBLIC [ppb_catalog] — badges stock + prix
-   ============================================================ */
+/* =========================================================================
+   Catalogue public [ppb_catalog]
+   ========================================================================= */
 
-.ppb-col-stock { white-space: nowrap; }
+.ppb-public-catalog {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 20px 16px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: 15px;
+    color: #1a1a2e;
+}
 
-.ppb-stock-in       { background: #e8f5e9; color: #2e7d32; }
-.ppb-stock-out      { background: #fce4ec; color: #c62828; }
-.ppb-stock-backorder{ background: #fff3e0; color: #e65100; }
+.ppb-catalog-toolbar {
+    margin-bottom: 16px;
+}
 
-.ppb-price-public-old { color: #999; font-size: 12px; }
-.ppb-price-sale       { color: #c62828; font-weight: 600; }
-.ppb-price-regular    { font-weight: 500; }
+/* Prix public (catalogue client) */
+.ppb-pub-price {
+    font-weight: 600;
+    color: #1a1a2e;
+}
+.ppb-pub-price-sale {
+    font-weight: 700;
+    color: #c0392b;
+}
 
 /* ---- Responsive ---- */
 @media ( max-width: 600px ) {

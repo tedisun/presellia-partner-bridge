@@ -23,18 +23,18 @@
     // -------------------------------------------------------------------------
 
     $( function () {
-        if ( $( '#ppb-portal' ).length ) {
-            if ( '1' === cfg.isAuth ) {
-                loadCatalog();
-            }
-            bindAuthForm();
-            bindToolbar();
-            bindCartActions();
-            bindCartToggle();
-            bindTiersToggle();
-            bindCheckout();
+        if ( '1' === cfg.isAuth ) {
+            loadCatalog();
         }
 
+        bindAuthForm();
+        bindToolbar();
+        bindCartActions();
+        bindCartToggle();
+        bindTiersToggle();
+        bindCheckout();
+
+        // Catalogue public — actif uniquement sur la page [ppb_catalog].
         if ( $( '#ppb-catalog' ).length ) {
             loadPublicCatalog();
         }
@@ -89,7 +89,7 @@
     }
 
     // -------------------------------------------------------------------------
-    // Catalogue
+    // Catalogue partenaire
     // -------------------------------------------------------------------------
 
     function loadCatalog() {
@@ -304,7 +304,7 @@
     }
 
     // -------------------------------------------------------------------------
-    // Recherche + filtre catégorie
+    // Recherche + filtre catégorie (portail partenaire)
     // -------------------------------------------------------------------------
 
     function bindSearch() {
@@ -643,15 +643,15 @@
         } );
     }
 
-    // -------------------------------------------------------------------------
+    // =========================================================================
     // Catalogue public [ppb_catalog]
-    // -------------------------------------------------------------------------
+    // =========================================================================
 
     function loadPublicCatalog() {
-        const $loading = $( '#ppb-public-loading' );
-        const $table   = $( '#ppb-public-table' );
-        const $empty   = $( '#ppb-public-empty' );
-        const $tbody   = $( '#ppb-public-body' );
+        const $loading = $( '#ppb-pub-catalog-loading' );
+        const $table   = $( '#ppb-pub-catalog-table' );
+        const $empty   = $( '#ppb-pub-catalog-empty' );
+        const $tbody   = $( '#ppb-pub-catalog-body' );
 
         $loading.show();
         $table.addClass( 'ppb-hidden' );
@@ -711,12 +711,14 @@
                     if ( product.thumbnail_url ) {
                         $thumbCell.html( '<img src="' + escAttr( product.thumbnail_url ) + '" class="ppb-product-thumb" alt="">' );
                     }
-                    $tbody.append(
-                        $( '<tr class="ppb-row-parent">' )
-                            .attr( 'data-category', cat )
-                            .append( $thumbCell )
-                            .append( $( '<td colspan="3">' ).html( '<strong>' + escHtml( product.name ) + '</strong>' ) )
-                    );
+
+                    const $parentRow = $( '<tr class="ppb-row-parent">' )
+                        .attr( 'data-category', cat )
+                        .append( $thumbCell )
+                        .append( $( '<td colspan="3">' ).html( '<strong>' + escHtml( product.name ) + '</strong>' ) );
+
+                    $tbody.append( $parentRow );
+
                     product.variations.forEach( function ( variation ) {
                         $tbody.append( buildPublicRow( variation, product.name, cat ) );
                     } );
@@ -744,54 +746,63 @@
             nameHtml = '<a href="' + escAttr( product.permalink ) + '" target="_blank" rel="noopener" class="ppb-product-link">' + nameHtml + '</a>';
         }
 
-        const outOfStock = product.stock_status === 'outofstock';
-        const backorder  = product.stock_status === 'onbackorder';
-
-        let stockHtml;
-        if ( outOfStock ) {
-            stockHtml = '<span class="ppb-stock-badge ppb-stock-out">Rupture</span>';
-        } else if ( backorder ) {
-            stockHtml = '<span class="ppb-stock-badge ppb-stock-backorder">Sur commande</span>';
-        } else {
-            let label = 'En stock';
-            if ( product.manage_stock && product.stock_qty !== null ) {
-                label += ' (' + parseInt( product.stock_qty, 10 ) + ')';
-            }
-            stockHtml = '<span class="ppb-stock-badge ppb-stock-in">' + escHtml( label ) + '</span>';
-        }
-
-        const regular = product.regular_price;
-        const sale    = product.sale_price;
-        let priceHtml;
-        if ( sale !== null && sale < regular ) {
-            priceHtml = '<s class="ppb-price-public-old">' + formatPrice( regular ) + '</s> ' +
-                        '<span class="ppb-price-sale">' + formatPrice( sale ) + '</span>';
-        } else if ( regular !== null ) {
-            priceHtml = '<span class="ppb-price-regular">' + formatPrice( regular ) + '</span>';
-        } else {
-            priceHtml = '—';
-        }
-
-        return $( '<tr class="ppb-row-product">' )
+        const $row = $( '<tr class="ppb-row-product">' )
             .attr( 'data-name', rawName.toLowerCase() )
-            .attr( 'data-category', category || '' )
-            .append(
-                $( '<td class="ppb-col-thumb">' ).html(
-                    product.thumbnail_url
-                        ? '<img src="' + escAttr( product.thumbnail_url ) + '" class="ppb-product-thumb" alt="">'
-                        : ''
-                )
-            )
-            .append( $( '<td class="ppb-product-name">' ).html( nameHtml ) )
-            .append( $( '<td class="ppb-col-num">' ).html( priceHtml ) )
-            .append( $( '<td class="ppb-col-stock">' ).html( stockHtml ) );
+            .attr( 'data-category', category || '' );
+
+        // Miniature
+        const $thumbCell = $( '<td class="ppb-col-thumb">' );
+        if ( product.thumbnail_url ) {
+            $thumbCell.html( '<img src="' + escAttr( product.thumbnail_url ) + '" class="ppb-product-thumb" alt="">' );
+        }
+        $row.append( $thumbCell );
+
+        $row.append( $( '<td class="ppb-product-name">' ).html( nameHtml ) );
+
+        // Prix public (barré si promo)
+        const $priceCell = $( '<td class="ppb-col-num">' );
+        const regularPrice = product.regular_price;
+        const salePrice    = product.sale_price;
+
+        if ( salePrice !== null && salePrice < regularPrice ) {
+            $priceCell.html(
+                '<s class="ppb-price-public">' + formatPrice( regularPrice ) + '</s> ' +
+                '<span class="ppb-pub-price-sale">' + formatPrice( salePrice ) + '</span>'
+            );
+        } else if ( regularPrice !== null ) {
+            $priceCell.html( '<span class="ppb-pub-price">' + formatPrice( regularPrice ) + '</span>' );
+        } else {
+            $priceCell.html( '<em class="ppb-no-price">—</em>' );
+        }
+        $row.append( $priceCell );
+
+        // Disponibilité
+        const $stockCell = $( '<td>' );
+        const status     = product.stock_status;
+
+        if ( status === 'outofstock' ) {
+            $stockCell.html( '<span class="ppb-stock-badge ppb-stock-out">Rupture</span>' );
+        } else if ( status === 'onbackorder' ) {
+            $stockCell.html( '<span class="ppb-stock-badge ppb-stock-backorder">Sur commande</span>' );
+        } else {
+            let inStockHtml = '<span class="ppb-stock-badge ppb-stock-in">En stock</span>';
+            if ( product.manage_stock && product.stock_qty !== null ) {
+                const qty = parseInt( product.stock_qty, 10 );
+                if ( qty >= 0 ) {
+                    inStockHtml += ' <small class="ppb-stock-qty">' + qty + '</small>';
+                }
+            }
+            $stockCell.html( inStockHtml );
+        }
+        $row.append( $stockCell );
+
+        return $row;
     }
 
     function renderPublicCategoryFilter( categories ) {
         if ( categories.length <= 1 ) return;
-        if ( $( '#ppb-public-cat-filter' ).length ) return;
 
-        const $select = $( '<select id="ppb-public-cat-filter" class="ppb-input ppb-cat-select">' )
+        const $select = $( '<select id="ppb-pub-cat-filter" class="ppb-input ppb-cat-select">' )
             .append( $( '<option value="">' ).text( 'Toutes les catégories' ) );
 
         categories.forEach( function ( cat ) {
@@ -799,31 +810,34 @@
         } );
 
         $select.on( 'change', filterPublicCatalog );
-        $select.insertBefore( '#ppb-public-search' );
+        $( '#ppb-pub-cat-filter-wrap' ).append( $select );
     }
 
     function bindPublicSearch() {
-        $( '#ppb-public-search' ).on( 'input', filterPublicCatalog );
+        $( '#ppb-pub-search' ).on( 'input', filterPublicCatalog );
     }
 
     function filterPublicCatalog() {
-        const q   = $( '#ppb-public-search' ).val().toLowerCase().trim();
-        const cat = $( '#ppb-public-cat-filter' ).val() || '';
+        const q   = $( '#ppb-pub-search' ).val().toLowerCase().trim();
+        const cat = $( '#ppb-pub-cat-filter' ).val() || '';
 
-        $( '#ppb-public-body tr.ppb-row-product' ).each( function () {
+        $( '#ppb-pub-catalog-body tr.ppb-row-product' ).each( function () {
             const name   = $( this ).data( 'name' ) || '';
             const rowCat = $( this ).attr( 'data-category' ) || '';
-            $( this ).toggle( ( q === '' || name.indexOf( q ) !== -1 ) && ( cat === '' || rowCat === cat ) );
+            const matchQ = q   === '' || name.indexOf( q ) !== -1;
+            const matchC = cat === '' || rowCat === cat;
+            $( this ).toggle( matchQ && matchC );
         } );
 
-        $( '#ppb-public-body tr.ppb-row-parent' ).each( function () {
+        $( '#ppb-pub-catalog-body tr.ppb-row-parent' ).each( function () {
             const $siblings = $( this ).nextUntil( '.ppb-row-parent, .ppb-row-category', '.ppb-row-product' );
             $( this ).toggle( $siblings.filter( ':visible' ).length > 0 );
         } );
 
-        $( '#ppb-public-body tr.ppb-row-category' ).each( function () {
+        $( '#ppb-pub-catalog-body tr.ppb-row-category' ).each( function () {
             const rowCat = $( this ).attr( 'data-category' ) || '';
-            const $items = $( '#ppb-public-body tr[data-category="' + rowCat + '"]' ).not( '.ppb-row-category' );
+            const $items = $( '#ppb-pub-catalog-body tr[data-category="' + rowCat + '"]' )
+                .not( '.ppb-row-category' );
             $( this ).toggle( $items.filter( ':visible' ).length > 0 );
         } );
     }

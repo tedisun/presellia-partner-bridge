@@ -1,5 +1,15 @@
 # Changelog — Presellia Partner Bridge
 
+## [2.2.0] — 2026-04-20
+
+### Modifié
+- `[ppb_portal]` restauré sur la base exacte v1.9.0 (portail partenaire éprouvé : barre panier sticky, partage d'accès, déconnexion, paliers, tutoriel vidéo)
+- `[ppb_catalog]` ajouté en surcouche propre : catalogue public accès libre, prix publics barrés si promo, badge stock coloré (En stock / Rupture / Sur commande + quantité), recherche instantanée + filtre catégorie
+- `enqueue_scripts()` charge sur la page portail OU la page catalogue selon les réglages
+- `ajax_load_public_catalog` : endpoint AJAX sans authentification pour le catalogue public
+- CSS : ajout section catalogue public (`.ppb-public-catalog`, `.ppb-stock-in`, `.ppb-pub-price`, `.ppb-pub-price-sale`)
+- Aucune régression sur le portail partenaire — code JS/PHP/CSS portal identique à v1.9.0
+
 ## [2.1.0] — 2026-04-20
 
 ### Ajouté
