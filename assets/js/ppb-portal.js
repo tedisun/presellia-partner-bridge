@@ -254,12 +254,12 @@
             const salePrice    = product.sale_price;
 
             let publicPricesHtml = '';
-            if ( regularPrice !== null && regularPrice > partnerPrice ) {
-                publicPricesHtml += '<s class="ppb-price-public">' + formatPrice( regularPrice ) + '</s> ';
-            }
-            // Si le produit est en promo et que le prix promo public est supérieur au prix partenaire
+            // Si promo active et supérieure au prix partenaire, on affiche uniquement le prix promo barré
             if ( salePrice !== null && salePrice > partnerPrice && ( regularPrice === null || salePrice < regularPrice ) ) {
                 publicPricesHtml += '<s class="ppb-price-public ppb-price-public--sale" style="color: #c0392b; margin-right: 4px;">' + formatPrice( salePrice ) + '</s> ';
+            } else if ( regularPrice !== null && regularPrice > partnerPrice ) {
+                // Sinon (pas de promo ou promo inactive), on affiche le prix régulier barré
+                publicPricesHtml += '<s class="ppb-price-public">' + formatPrice( regularPrice ) + '</s> ';
             }
             html = publicPricesHtml + html;
 

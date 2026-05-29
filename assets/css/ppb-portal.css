@@ -515,16 +515,195 @@
     color: #c0392b;
 }
 
+/* ---- Sticky Header (Desktop) ---- */
+.ppb-catalog-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: #f8f9fa;
+    box-shadow: inset 0 -2px 0 #e4e7ec;
+}
+
 /* ---- Responsive ---- */
 @media ( max-width: 600px ) {
     .ppb-auth-form { flex-direction: column; }
-    .ppb-toolbar   { flex-direction: column; align-items: stretch; }
-    .ppb-toolbar-actions { margin-left: 0; }
-    /* Masque la colonne miniature sur mobile (colonne 1) */
-    .ppb-catalog-table th:nth-child(1),
-    .ppb-catalog-table td:nth-child(1) { display: none; }
-    .ppb-cart-bar { padding: 0 12px; gap: 8px; }
+    .ppb-toolbar   { flex-direction: column; align-items: stretch; gap: 8px; }
+    .ppb-toolbar-actions { margin-left: 0; display: flex; width: 100%; gap: 8px; }
+    .ppb-toolbar-actions .ppb-btn { flex: 1; justify-content: center; }
+    
+    /* Transform table into a clean list of vertical cards */
+    .ppb-catalog-table, 
+    .ppb-catalog-table tbody, 
+    .ppb-catalog-table tr {
+        display: block;
+        width: 100%;
+    }
+    .ppb-catalog-table thead {
+        display: none; /* Hide header completely on mobile */
+    }
+    
+    /* Category row on mobile */
+    .ppb-catalog-table tr.ppb-row-category {
+        background: #eef2f7 !important;
+        margin: 20px 0 10px;
+        padding: 8px 12px;
+        border-radius: 6px;
+        border: none;
+    }
+    .ppb-catalog-table tr.ppb-row-category td {
+        display: block;
+        padding: 0 !important;
+        border: none;
+        background: none !important;
+    }
+    
+    /* Variable parent row on mobile */
+    .ppb-catalog-table tr.ppb-row-parent {
+        background: #f4f6f8 !important;
+        margin: 12px 0 8px;
+        padding: 10px 14px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    .ppb-catalog-table tr.ppb-row-parent td {
+        display: block;
+        padding: 0 !important;
+        border: none;
+        background: none !important;
+    }
+    .ppb-catalog-table tr.ppb-row-parent .ppb-product-thumb {
+        width: 32px;
+        height: 32px;
+    }
+    
+    /* Product card row on mobile */
+    .ppb-catalog-table tr.ppb-row-product:not(.ppb-row-category):not(.ppb-row-parent) {
+        background: #fff;
+        border: 1px solid #e4e7ec;
+        border-radius: 12px;
+        padding: 14px;
+        margin-bottom: 12px;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+        display: grid;
+        grid-template-columns: auto 1fr;
+        grid-template-rows: auto auto auto auto;
+        gap: 8px;
+        box-sizing: border-box;
+    }
+    
+    .ppb-catalog-table tr.ppb-row-product td {
+        display: block;
+        padding: 0 !important;
+        border: none;
+        background: none !important;
+        text-align: left;
+    }
+    
+    /* Table cells alignment in mobile card grid */
+    .ppb-catalog-table tr.ppb-row-product .ppb-col-thumb {
+        grid-column: 1;
+        grid-row: 1 / span 2;
+        margin-right: 4px;
+    }
+    .ppb-catalog-table tr.ppb-row-product .ppb-product-name {
+        grid-column: 2;
+        grid-row: 1;
+        font-weight: 600;
+        font-size: 14px;
+    }
+    .ppb-catalog-table tr.ppb-row-product .ppb-col-partner {
+        grid-column: 2;
+        grid-row: 2;
+        text-align: left;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-top: 2px;
+    }
+    .ppb-catalog-table tr.ppb-row-product .ppb-col-num:not(.ppb-col-partner) {
+        grid-column: 1 / span 2;
+        grid-row: 3;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 6px;
+        border-top: 1px solid #f0f0f0;
+        padding-top: 8px !important;
+    }
+    .ppb-catalog-table tr.ppb-row-product .ppb-col-num:not(.ppb-col-partner)::before {
+        content: "Quantité :";
+        font-size: 13px;
+        color: #777;
+    }
+    .ppb-qty-input {
+        flex: 1;
+        height: 38px;
+        max-width: 100px;
+    }
+    .ppb-catalog-table tr.ppb-row-product .ppb-col-action {
+        grid-column: 1 / span 2;
+        grid-row: 4;
+        width: 100%;
+    }
+    .ppb-catalog-table tr.ppb-row-product .ppb-btn-add {
+        width: 100%;
+        justify-content: center;
+        height: 40px;
+        margin-top: 4px;
+    }
+    
+    /* Variable child card indentation on mobile */
+    .ppb-catalog-table tr.ppb-row-variation {
+        margin-left: 12px;
+        width: calc(100% - 12px) !important;
+        border-left: 3px solid #0073aa !important;
+        background: #fafbfc !important;
+    }
+    
+    /* Stepper and chips layout on mobile */
+    .ppb-tiers-info-row {
+        display: block;
+        background: #f4f9fc;
+        border-radius: 8px;
+        margin: -8px 0 12px;
+        padding: 8px 12px;
+        border: 1px dashed #c5dff0;
+        box-sizing: border-box;
+    }
+    .ppb-tiers-info-row.ppb-row-variation {
+        margin-left: 12px;
+        width: calc(100% - 12px) !important;
+    }
+    .ppb-tiers-info-row td {
+        display: block;
+        padding: 0 !important;
+        background: none !important;
+    }
+    .ppb-tiers-info-cell {
+        gap: 6px;
+    }
+    .ppb-tier-chip {
+        font-size: 11px;
+        padding: 2px 8px;
+    }
+    
+    /* Floating pill cart bar adaptive on mobile */
+    .ppb-cart-bar {
+        bottom: 12px;
+        width: calc(100% - 24px);
+        padding: 0 16px;
+        height: 56px;
+        border-radius: 28px;
+    }
     .ppb-cart-bar-sep { display: none; }
     #ppb-cart-bar-total { display: none; }
+    .ppb-cart-panel {
+        bottom: 80px;
+        width: calc(100% - 24px);
+        max-height: 40vh;
+        border-radius: 12px;
+    }
     .ppb-cart-table td { padding: 8px 12px; }
 }
