@@ -246,14 +246,23 @@
 
         $row.append( $( '<td class="ppb-product-name">' ).html( nameHtml ) );
 
-        // Colonne prix : prix partenaire + prix public barré + toggle paliers si définis.
+        // Colonne prix : prix partenaire + prix public barré (régulier + promo si existants) + toggle paliers si définis.
         const $partnerCell = $( '<td class="ppb-col-num ppb-col-partner">' );
         if ( partnerPrice !== null ) {
             let html = '<span class="ppb-price-partner">' + formatPrice( partnerPrice ) + '</span>';
             const regularPrice = product.regular_price;
+            const salePrice    = product.sale_price;
+
+            let publicPricesHtml = '';
             if ( regularPrice !== null && regularPrice > partnerPrice ) {
-                html = '<s class="ppb-price-public">' + formatPrice( regularPrice ) + '</s> ' + html;
+                publicPricesHtml += '<s class="ppb-price-public">' + formatPrice( regularPrice ) + '</s> ';
             }
+            // Si le produit est en promo et que le prix promo public est supérieur au prix partenaire
+            if ( salePrice !== null && salePrice > partnerPrice && ( regularPrice === null || salePrice < regularPrice ) ) {
+                publicPricesHtml += '<s class="ppb-price-public ppb-price-public--sale" style="color: #c0392b; margin-right: 4px;">' + formatPrice( salePrice ) + '</s> ';
+            }
+            html = publicPricesHtml + html;
+
             // Bouton paliers si au moins 2 paliers définis.
             const tiers = product.tiers || [];
             if ( tiers.length > 1 ) {
