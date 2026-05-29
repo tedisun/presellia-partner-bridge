@@ -1,5 +1,14 @@
 # Changelog — Presellia Partner Bridge
 
+## [2.3.0] — 2026-05-29
+
+### Ajouté
+- **Performance (Cache)** : Implémentation complète d'un cache par Transient WordPress (`ppb_catalog_cache`) pour le catalogue, divisant le temps de réponse AJAX par 10.
+- **Cache Invalidation** : Invalidation du cache automatique lors de toute mise à jour produit, variation, bulk save ou modification REST.
+- **Visionneuse de Logs en Admin** : Intégration d'un nouvel onglet "Journal de logs" dans WooCommerce → PPB Réglages pour consulter, filtrer par niveau (badge info/warning/error) et déplier le contexte JSON des événements récents.
+- **Prix Dégressifs Dynamiques** : Calculateur réactif côté client pour les paliers de quantité (volume pricing). La modification de quantité change en direct le prix affiché, met en valeur le badge de palier atteint en vert et met à jour le panier.
+- **Design System Premium** : Carte de connexion revendeur glassmorphic (flou d'arrière-plan), barre de panier flottante arrondie en pilule avec animations fluides d'ajouts (rebond + flash) et récapitulatif suspendu.
+
 ## [2.2.0] — 2026-04-20
 
 ### Modifié

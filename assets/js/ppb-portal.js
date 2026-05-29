@@ -32,6 +32,7 @@
         bindCartActions();
         bindCartToggle();
         bindTiersToggle();
+        bindQtyInputChanges();
         bindCheckout();
 
         // Catalogue public — actif uniquement sur la page [ppb_catalog].
@@ -232,7 +233,9 @@
 
         const $row = $( '<tr class="ppb-row-product">' )
             .attr( 'data-name', rawName.toLowerCase() )
-            .attr( 'data-category', category || '' );
+            .attr( 'data-category', category || '' )
+            .attr( 'data-tiers', JSON.stringify( product.tiers || [] ) )
+            .attr( 'data-base-partner-price', partnerPrice !== null ? partnerPrice : '' );
 
         // Colonne miniature
         const $thumbCell = $( '<td class="ppb-col-thumb">' );
@@ -497,7 +500,7 @@
             tiers.forEach( function ( tier, i ) {
                 const next  = tiers[ i + 1 ];
                 const label = next ? tier.min + '–' + ( next.min - 1 ) : tier.min + '+';
-                cells += '<span class="ppb-tier-chip">' +
+                cells += '<span class="ppb-tier-chip" data-index="' + i + '">' +
                     '<span class="ppb-tier-qty">' + escHtml( label ) + '</span>' +
                     '<span class="ppb-tier-price-val">' + formatPrice( tier.price ) + '</span>' +
                     '</span>';
@@ -507,6 +510,10 @@
                 .append( $( '<td colspan="5" class="ppb-tiers-info-cell">' ).html( cells ) );
 
             $btn.closest( 'tr' ).after( $tiersRow );
+
+            // Surligne immédiatement le palier actif au moment de l'ouverture
+            const qty = parseInt( $btn.closest( 'tr' ).find( '.ppb-qty-input' ).val(), 10 ) || 1;
+            updateRowTierPrice( $btn.closest( 'tr' ), qty );
         } );
     }
 
@@ -840,6 +847,53 @@
                 .not( '.ppb-row-category' );
             $( this ).toggle( $items.filter( ':visible' ).length > 0 );
         } );
+    }
+
+    // -------------------------------------------------------------------------
+    // Calcul dynamique en temps réel des prix par paliers
+    // -------------------------------------------------------------------------
+
+    function bindQtyInputChanges() {
+        $( document ).on( 'input change', '.ppb-qty-input', function () {
+            const $qtyInput = $( this );
+            const $row      = $qtyInput.closest( 'tr' );
+            const qty       = parseInt( $qtyInput.val(), 10 ) || 1;
+            updateRowTierPrice( $row, qty );
+        } );
+    }
+
+    function updateRowTierPrice( $row, qty ) {
+        const tiersStr = $row.attr( 'data-tiers' );
+        if ( ! tiersStr ) return;
+
+        const tiers = JSON.parse( tiersStr || '[]' );
+        if ( ! tiers.length ) return;
+
+        const basePrice = parseFloat( $row.attr( 'data-base-partner-price' ) );
+        let applicablePrice = basePrice;
+        let activeIndex = -1;
+
+        tiers.forEach( function ( tier, idx ) {
+            if ( qty >= tier.min ) {
+                applicablePrice = parseFloat( tier.price );
+                activeIndex = idx;
+            }
+        } );
+
+        // Met à jour l'affichage du prix partenaire
+        $row.find( '.ppb-price-partner' ).text( formatPrice( applicablePrice ) );
+
+        // Met à jour data-partner-price sur le bouton "Ajouter"
+        $row.find( '.ppb-btn-add' ).attr( 'data-partner-price', applicablePrice );
+
+        // Met à jour les puces de paliers si la ligne de détail est ouverte
+        const $detailRow = $row.next( '.ppb-tiers-info-row' );
+        if ( $detailRow.length ) {
+            $detailRow.find( '.ppb-tier-chip' )
+                .removeClass( 'ppb-tier-active' )
+                .filter( '[data-index="' + activeIndex + '"]' )
+                .addClass( 'ppb-tier-active' );
+        }
     }
 
     // -------------------------------------------------------------------------

@@ -21,12 +21,22 @@ class PPB_Pricing {
     /** Nom de la meta paliers de quantité. */
     public const META_KEY_TIERS = '_ppb_partner_tiers';
 
+    /** Nom de la clé de cache du catalogue. */
+    public const CACHE_KEY = 'ppb_catalog_cache';
+
     public function __construct() {
         // Application des prix dans le panier/checkout.
         add_action( 'woocommerce_before_calculate_totals', [ $this, 'apply_partner_prices' ], 20, 1 );
 
         // Invalide le cache de prix des variations lors d'une mise à jour de prix partenaire.
         add_filter( 'woocommerce_get_variation_prices_hash', [ $this, 'variation_prices_hash' ] );
+
+        // Invalidation du cache du catalogue lors des modifications de produits.
+        add_action( 'woocommerce_update_product',         [ $this, 'clear_cache' ] );
+        add_action( 'woocommerce_new_product',            [ $this, 'clear_cache' ] );
+        add_action( 'woocommerce_trash_product',          [ $this, 'clear_cache' ] );
+        add_action( 'woocommerce_untrash_product',        [ $this, 'clear_cache' ] );
+        add_action( 'woocommerce_save_product_variation', [ $this, 'clear_cache' ] );
     }
 
     // -------------------------------------------------------------------------
@@ -141,6 +151,8 @@ class PPB_Pricing {
             // Synchronise le prix plat avec le premier palier (affiché dans le portail).
             self::set_partner_price( $product_id, (string) $valid[0]['price'] );
         }
+
+        self::clear_cache();
     }
 
     /**
@@ -176,6 +188,8 @@ class PPB_Pricing {
         } else {
             update_post_meta( $product_id, self::META_KEY, wc_format_decimal( $value ) );
         }
+
+        self::clear_cache();
     }
 
     // -------------------------------------------------------------------------
@@ -189,6 +203,11 @@ class PPB_Pricing {
      * @return array<int, array<string, mixed>>
      */
     public static function get_catalog(): array {
+        $cached = get_transient( self::CACHE_KEY );
+        if ( is_array( $cached ) ) {
+            return $cached;
+        }
+
         $products_wc = wc_get_products( [
             'status'  => 'publish',
             'limit'   => -1,
@@ -262,6 +281,8 @@ class PPB_Pricing {
             }
         }
 
+        set_transient( self::CACHE_KEY, $catalog, DAY_IN_SECONDS );
+
         return $catalog;
     }
 
@@ -333,5 +354,12 @@ class PPB_Pricing {
         }
 
         return $hash;
+    }
+
+    /**
+     * Supprime le cache du catalogue.
+     */
+    public static function clear_cache(): void {
+        delete_transient( self::CACHE_KEY );
     }
 }

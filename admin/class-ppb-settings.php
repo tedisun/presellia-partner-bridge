@@ -125,6 +125,7 @@ class PPB_Settings {
 
         $tab_partner_url = admin_url( 'admin.php?page=' . self::MENU_SLUG . '&tab=partner' );
         $tab_catalog_url = admin_url( 'admin.php?page=' . self::MENU_SLUG . '&tab=catalog' );
+        $tab_logs_url    = admin_url( 'admin.php?page=' . self::MENU_SLUG . '&tab=logs' );
         ?>
         <div class="wrap">
             <h1><?php esc_html_e( 'Presellia Partner Bridge — Réglages', 'presellia-partner-bridge' ); ?></h1>
@@ -168,16 +169,95 @@ class PPB_Settings {
             <!-- Onglets de navigation -->
             <nav class="nav-tab-wrapper" style="margin-bottom: 20px;">
                 <a href="<?php echo esc_url( $tab_partner_url ); ?>"
-                   class="nav-tab <?php echo 'catalog' !== $current_tab ? 'nav-tab-active' : ''; ?>">
+                   class="nav-tab <?php echo ( 'partner' === $current_tab || ( 'catalog' !== $current_tab && 'logs' !== $current_tab ) ) ? 'nav-tab-active' : ''; ?>">
                     🤝 <?php esc_html_e( 'Portail Partenaire', 'presellia-partner-bridge' ); ?>
                 </a>
                 <a href="<?php echo esc_url( $tab_catalog_url ); ?>"
                    class="nav-tab <?php echo 'catalog' === $current_tab ? 'nav-tab-active' : ''; ?>">
                     📋 <?php esc_html_e( 'Catalogue Public', 'presellia-partner-bridge' ); ?>
                 </a>
+                <a href="<?php echo esc_url( $tab_logs_url ); ?>"
+                   class="nav-tab <?php echo 'logs' === $current_tab ? 'nav-tab-active' : ''; ?>">
+                    📊 <?php esc_html_e( 'Journal de Logs', 'presellia-partner-bridge' ); ?>
+                </a>
             </nav>
 
-            <?php if ( 'catalog' === $current_tab ) : ?>
+            <?php if ( 'logs' === $current_tab ) : ?>
+
+                <h2><?php esc_html_e( 'Journal de logs récents (100 derniers événements)', 'presellia-partner-bridge' ); ?></h2>
+                <p class="description" style="margin-bottom:16px;">
+                    <?php esc_html_e( 'Consultez ici les diagnostics en temps réel, les accès API, les connexions partenaires et les erreurs éventuelles.', 'presellia-partner-bridge' ); ?>
+                </p>
+
+                <!-- Boutons d'actions et filtres de logs -->
+                <div class="ppb-logs-actions" style="margin-bottom: 16px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+                    <select id="ppb-log-filter-level" class="postform">
+                        <option value=""><?php esc_html_e( 'Tous les niveaux', 'presellia-partner-bridge' ); ?></option>
+                        <option value="info"><?php esc_html_e( 'Info', 'presellia-partner-bridge' ); ?></option>
+                        <option value="warning"><?php esc_html_e( 'Avertissement', 'presellia-partner-bridge' ); ?></option>
+                        <option value="error"><?php esc_html_e( 'Erreur', 'presellia-partner-bridge' ); ?></option>
+                    </select>
+                    <input type="text" id="ppb-log-filter-event" placeholder="<?php esc_attr_e( 'Rechercher événement...', 'presellia-partner-bridge' ); ?>" style="padding:4px 8px; border:1px solid #ccc; border-radius:4px;">
+                    
+                    <button id="ppb-purge-logs-tab" class="button button-link-delete" style="margin-left: auto;">
+                        <?php esc_html_e( 'Vider tous les logs', 'presellia-partner-bridge' ); ?>
+                    </button>
+                    <span id="ppb-purge-tab-status"></span>
+                </div>
+
+                <table class="widefat striped ppb-logs-table" id="ppb-logs-table">
+                    <thead>
+                        <tr>
+                            <th><?php esc_html_e( 'Date/Heure', 'presellia-partner-bridge' ); ?></th>
+                            <th><?php esc_html_e( 'Niveau', 'presellia-partner-bridge' ); ?></th>
+                            <th><?php esc_html_e( 'Événement', 'presellia-partner-bridge' ); ?></th>
+                            <th><?php esc_html_e( 'Description / Message', 'presellia-partner-bridge' ); ?></th>
+                            <th><?php esc_html_e( 'IP', 'presellia-partner-bridge' ); ?></th>
+                            <th><?php esc_html_e( 'Contexte', 'presellia-partner-bridge' ); ?></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php
+                        $recent_logs = PPB_Logger::get_recent( 100 );
+                        if ( empty( $recent_logs ) ) :
+                        ?>
+                            <tr>
+                                <td colspan="6"><?php esc_html_e( 'Aucun log enregistré pour le moment.', 'presellia-partner-bridge' ); ?></td>
+                            </tr>
+                        <?php else : ?>
+                            <?php foreach ( $recent_logs as $log ) :
+                                $level_class = 'ppb-log-badge--' . esc_attr( $log['level'] );
+                                ?>
+                                <tr class="ppb-log-row" data-level="<?php echo esc_attr( $log['level'] ); ?>" data-event="<?php echo esc_attr( strtolower( $log['event'] ) ); ?>">
+                                    <td><code><?php echo esc_html( $log['created_at'] ); ?></code></td>
+                                    <td>
+                                        <span class="ppb-log-badge <?php echo $level_class; ?>">
+                                            <?php echo esc_html( strtoupper( $log['level'] ) ); ?>
+                                        </span>
+                                    </td>
+                                    <td><strong><code><?php echo esc_html( $log['event'] ); ?></code></strong></td>
+                                    <td><?php echo esc_html( $log['message'] ); ?></td>
+                                    <td><code><?php echo esc_html( $log['ip'] ?: '—' ); ?></code></td>
+                                    <td>
+                                        <?php if ( ! empty( $log['context'] ) && 'null' !== $log['context'] ) : ?>
+                                            <button type="button" class="button button-small ppb-log-context-toggle" data-opened="0">
+                                                <?php esc_html_e( 'Voir context ▾', 'presellia-partner-bridge' ); ?>
+                                            </button>
+                                            <pre class="ppb-log-context-data" style="display:none; margin-top:8px; background:#f4f4f4; padding:8px; border-radius:4px; font-size:11px; max-width:300px; overflow-x:auto;"><code><?php
+                                                $decoded = json_decode( $log['context'], true );
+                                                echo esc_html( wp_json_encode( $decoded, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE ) );
+                                            ?></code></pre>
+                                        <?php else : ?>
+                                            <span class="description">—</span>
+                                        <?php endif; ?>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </tbody>
+                </table>
+
+            <?php elseif ( 'catalog' === $current_tab ) : ?>
 
                 <?php settings_errors( self::OPTION_GROUP_CATALOG ); ?>
 

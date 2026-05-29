@@ -14,6 +14,7 @@
         bindRevokeAll();
         bindPurgeLogs();
         bindCheckUpdate();
+        bindLogsTabActions();
     } );
 
     // -------------------------------------------------------------------------
@@ -268,6 +269,70 @@
             } )
             .always( function () {
                 $btn.prop( 'disabled', false ).text( 'Vérifier maintenant' );
+            } );
+        } );
+    }
+
+    // -------------------------------------------------------------------------
+    // Actions sur l'onglet Logs (Filtres, Affichage contexte, Purge)
+    // -------------------------------------------------------------------------
+
+    function bindLogsTabActions() {
+        // Toggle affichage du contexte JSON
+        $( document ).on( 'click', '.ppb-log-context-toggle', function () {
+            const $btn = $( this );
+            const $pre = $btn.next( '.ppb-log-context-data' );
+            const opened = $btn.attr( 'data-opened' ) === '1';
+
+            if ( opened ) {
+                $pre.slideUp( 150 );
+                $btn.attr( 'data-opened', '0' ).text( 'Voir context ▾' );
+            } else {
+                $pre.slideDown( 150 );
+                $btn.attr( 'data-opened', '1' ).text( 'Masquer context ▴' );
+            }
+        } );
+
+        // Filtrage en direct par niveau et par événement
+        function filterLogs() {
+            const level = $( '#ppb-log-filter-level' ).val() || '';
+            const event = $( '#ppb-log-filter-event' ).val().toLowerCase().trim();
+
+            $( '#ppb-logs-table tbody tr.ppb-log-row' ).each( function () {
+                const rowLevel = $( this ).data( 'level' ) || '';
+                const rowEvent = $( this ).data( 'event' ) || '';
+
+                const matchLevel = level === '' || rowLevel === level;
+                const matchEvent = event === '' || rowEvent.indexOf( event ) !== -1;
+
+                $( this ).toggle( matchLevel && matchEvent );
+            } );
+        }
+
+        $( '#ppb-log-filter-level' ).on( 'change', filterLogs );
+        $( '#ppb-log-filter-event' ).on( 'input', filterLogs );
+
+        // Bouton de purge spécifique dans l'onglet Logs
+        $( '#ppb-purge-logs-tab' ).on( 'click', function () {
+            if ( ! confirm( 'Vider définitivement tous les logs ?' ) ) return;
+
+            const $btn    = $( this );
+            const $status = $( '#ppb-purge-tab-status' );
+
+            $btn.prop( 'disabled', true );
+
+            $.post( cfg.ajaxUrl, {
+                action: 'ppb_purge_logs',
+                nonce:  cfg.nonce,
+            } )
+            .done( function ( res ) {
+                if ( res.success ) {
+                    $status.css( 'color', 'green' ).text( res.data.message );
+                    setTimeout( function () { location.reload(); }, 1000 );
+                }
+            } )
+            .always( function () {
+                $btn.prop( 'disabled', false );
             } );
         } );
     }

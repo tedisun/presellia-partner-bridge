@@ -76,14 +76,17 @@
     min-height: 300px;
 }
 .ppb-auth-card {
-    background: #fff;
-    border: 1px solid #e4e7ec;
-    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.75);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    border-radius: 16px;
     padding: 40px 32px;
     width: 100%;
     max-width: 400px;
-    box-shadow: 0 4px 24px rgba(0,0,0,.08);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.3);
     text-align: center;
+    transition: transform 0.3s ease;
 }
 .ppb-auth-intro {
     color: #555;
@@ -203,6 +206,21 @@
     padding: 3px 10px;
     font-size: 12px;
     white-space: nowrap;
+    transition: all 0.2s ease;
+}
+.ppb-tier-chip.ppb-tier-active {
+    background: #e6f4ea;
+    border-color: #a8d5b5;
+    color: #1e6e37;
+    box-shadow: 0 2px 6px rgba(30, 110, 55, 0.12);
+    transform: scale(1.04);
+}
+.ppb-tier-chip.ppb-tier-active .ppb-tier-qty {
+    color: #1e6e37;
+    font-weight: 600;
+}
+.ppb-tier-chip.ppb-tier-active .ppb-tier-price-val {
+    color: #1e6e37;
 }
 .ppb-tier-qty { color: #555; }
 .ppb-tier-price-val { color: #0073aa; font-weight: 700; }
@@ -281,17 +299,22 @@
 /* ---- Barre panier flottante ---- */
 .ppb-cart-bar {
     position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: calc(100% - 32px);
+    max-width: 928px;
     z-index: 9999;
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 0 20px;
-    height: 60px;
+    padding: 0 24px;
+    height: 64px;
     background: #1a1a2e;
-    box-shadow: 0 -2px 16px rgba(0,0,0,.25);
+    border-radius: 32px;
+    box-shadow: 0 12px 36px rgba(0,0,0,.35);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    transition: all 0.3s ease;
 }
 .ppb-cart-bar.ppb-hidden { display: none !important; }
 
@@ -321,30 +344,34 @@
 
 /* Flash d'ajout */
 @keyframes ppb-bar-flash {
-    0%   { background: #005f8d; }
-    50%  { background: #0073aa; }
-    100% { background: #1a1a2e; }
+    0%   { background: #005f8d; transform: translateX(-50%) scale(1); }
+    50%  { background: #0073aa; transform: translateX(-50%) scale(1.03); }
+    100% { background: #1a1a2e; transform: translateX(-50%) scale(1); }
 }
-.ppb-bar-flash { animation: ppb-bar-flash .4s ease; }
+.ppb-bar-flash { animation: ppb-bar-flash .4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
 
 /* ---- Panneau détail de la sélection ---- */
 .ppb-cart-panel {
     position: fixed;
-    bottom: 60px; /* = hauteur de la barre */
-    left: 0;
-    right: 0;
+    bottom: 96px; /* = 20px bottom + 64px height + 12px gap */
+    left: 50%;
+    transform: translate(-50%, 120%);
+    width: calc(100% - 32px);
+    max-width: 928px;
     z-index: 9998;
-    max-height: 50vh;
+    max-height: 45vh;
     overflow-y: auto;
     background: #fff;
-    border-top: 2px solid #0073aa;
-    box-shadow: 0 -4px 20px rgba(0,0,0,.18);
-    transform: translateY(100%);
-    transition: transform .25s ease;
+    border-radius: 16px;
+    border: 1px solid #e4e7ec;
+    box-shadow: 0 10px 40px rgba(0,0,0,.2);
+    transition: transform .3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
+    opacity: 0;
     pointer-events: none;
 }
 .ppb-cart-panel.ppb-panel-open {
-    transform: translateY(0);
+    transform: translate(-50%, 0);
+    opacity: 1;
     pointer-events: auto;
 }
 
