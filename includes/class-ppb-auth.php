@@ -23,7 +23,7 @@ class PPB_Auth {
     public const COOKIE_NAME = 'ppb_token';
 
     /** Préfixe des transients de tokens. */
-    private const TRANSIENT_PREFIX = 'ppb_tok_';
+    private const TRANSIENT_PREFIX = 'ppb_t_';
 
     public function __construct() {
         add_action( 'init',          [ $this, 'check_authentication' ], 1 );
@@ -140,7 +140,7 @@ class PPB_Auth {
         $ttl_secs = $ttl_days * DAY_IN_SECONDS;
 
         set_transient(
-            self::TRANSIENT_PREFIX . hash( 'sha256', $token ),
+            self::TRANSIENT_PREFIX . md5( $token ),
             [
                 'created_at' => time(),
                 'ip'         => self::get_ip(),
@@ -157,7 +157,7 @@ class PPB_Auth {
             return false;
         }
 
-        $data = get_transient( self::TRANSIENT_PREFIX . hash( 'sha256', $token ) );
+        $data = get_transient( self::TRANSIENT_PREFIX . md5( $token ) );
 
         return false !== $data;
     }
@@ -166,7 +166,7 @@ class PPB_Auth {
      * Supprime un token.
      */
     private function delete_token( string $token ): void {
-        delete_transient( self::TRANSIENT_PREFIX . hash( 'sha256', $token ) );
+        delete_transient( self::TRANSIENT_PREFIX . md5( $token ) );
     }
 
     /**
@@ -215,6 +215,7 @@ class PPB_Auth {
      * Appelé depuis PPB_Settings.
      */
     public static function set_password( string $plain_password ): void {
+        $plain_password = trim( $plain_password );
         if ( empty( $plain_password ) ) {
             return;
         }

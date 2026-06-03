@@ -17,6 +17,7 @@ class PPB_Portal {
         add_shortcode( 'ppb_catalog', [ $this, 'render_catalog_shortcode' ] );
 
         add_action( 'wp_enqueue_scripts', [ $this, 'enqueue_scripts' ] );
+        add_action( 'template_redirect',  [ $this, 'disable_page_caching' ] );
 
         // AJAX : chargement du catalogue partenaire (authentifié).
         add_action( 'wp_ajax_nopriv_ppb_load_catalog', [ $this, 'ajax_load_catalog' ] );
@@ -99,6 +100,22 @@ class PPB_Portal {
                 'noPartnerPrice'      => __( 'Prix non défini', 'presellia-partner-bridge' ),
             ],
         ] );
+    }
+
+    /**
+     * Désactive le cache de page pour le portail et le catalogue public
+     * afin d'éviter l'expiration des nonces et les bugs de redirection.
+     */
+    public function disable_page_caching(): void {
+        $portal_page_id  = (int) get_option( 'ppb_portal_page_id', 0 );
+        $catalog_page_id = (int) get_option( 'ppb_catalog_page_id', 0 );
+
+        if ( ( $portal_page_id && is_page( $portal_page_id ) ) || ( $catalog_page_id && is_page( $catalog_page_id ) ) ) {
+            if ( ! defined( 'DONOTCACHEPAGE' ) ) {
+                define( 'DONOTCACHEPAGE', true );
+            }
+            nocache_headers();
+        }
     }
 
     // -------------------------------------------------------------------------

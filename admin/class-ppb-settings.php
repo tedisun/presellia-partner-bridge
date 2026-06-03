@@ -89,7 +89,7 @@ class PPB_Settings {
             isset( $_POST['ppb_settings_nonce'] ) &&
             wp_verify_nonce( sanitize_key( $_POST['ppb_settings_nonce'] ), 'ppb_settings' )
         ) {
-            $new_password = isset( $_POST['ppb_new_password'] ) ? wp_unslash( $_POST['ppb_new_password'] ) : '';
+            $new_password = isset( $_POST['ppb_new_password'] ) ? trim( wp_unslash( $_POST['ppb_new_password'] ) ) : '';
 
             if ( strlen( $new_password ) < 6 ) {
                 $password_error = __( 'Le mot de passe doit contenir au moins 6 caractères.', 'presellia-partner-bridge' );

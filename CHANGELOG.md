@@ -1,5 +1,13 @@
 # Changelog — Presellia Partner Bridge
 
+## [2.3.1] — 2026-06-03
+
+### Correctif
+- **Résolution des bugs d'authentification** :
+  - Raccourcissement des clés de transients à 38 caractères (`ppb_t_` + MD5) pour éviter la troncature MySQL sur les tables `wp_options` avec un index historique limité à 64 caractères, ce qui corrige les jetons invalides.
+  - Nettoyage des espaces de début/fin (`trim()`) sur les mots de passe lors de la saisie par l'administrateur et lors de la vérification.
+  - Contournement automatique de la mise en cache de page (ex. WP Fastest Cache) sur les pages du Portail et du Catalogue Public (via la constante `DONOTCACHEPAGE` et `nocache_headers()`) afin de prévenir l'expiration des nonces de sécurité et de permettre aux redirections de jetons de s'exécuter côté serveur.
+
 ## [2.3.0] — 2026-05-29
 
 ### Ajouté
