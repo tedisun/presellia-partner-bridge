@@ -1,5 +1,13 @@
 # Changelog — Presellia Partner Bridge
 
+## [2.4.0] — 2026-06-29
+
+### Ajouté
+- **Portail Revendeur Headless (Pont de Session)** :
+  - Endpoint REST `POST /wp-json/ppb/v1/checkout/prepare` pour recevoir les paniers des portails externes, valider le jeton revendeur et générer un jeton de transfert sécurisé à usage unique (Transient temporaire de 15 min).
+  - Intercepteur de template `/ppb-transfer` qui valide le jeton de transfert, connecte automatiquement le revendeur sur la session locale, charge le panier et redirige immédiatement vers le checkout WooCommerce natif.
+  - Refactorisation de la validation de jetons dans la classe `PPB_Auth` en introduisant la méthode publique et statique `is_valid_token` pour l'API REST.
+
 ## [2.3.1] — 2026-06-03
 
 ### Correctif

@@ -101,6 +101,23 @@ class PPB_Api {
             'callback'            => [ $this, 'revoke_all_tokens' ],
             'permission_callback' => [ $this, 'check_api_key' ],
         ] );
+
+        register_rest_route( self::NAMESPACE, '/checkout/prepare', [
+            'methods'             => WP_REST_Server::CREATABLE,
+            'callback'            => [ $this, 'prepare_checkout_session' ],
+            'permission_callback' => '__return_true',
+            'args'                => [
+                'partner_token' => [
+                    'type'              => 'string',
+                    'required'          => true,
+                    'sanitize_callback' => 'sanitize_text_field',
+                ],
+                'items' => [
+                    'type'              => 'array',
+                    'required'          => true,
+                ],
+            ],
+        ] );
     }
 
     // -------------------------------------------------------------------------
@@ -268,6 +285,77 @@ class PPB_Api {
                 __( '%d token(s) révoqué(s).', 'presellia-partner-bridge' ),
                 $count
             ),
+        ] );
+    }
+
+    // -------------------------------------------------------------------------
+    // POST /checkout/prepare
+    // -------------------------------------------------------------------------
+
+    public function prepare_checkout_session( WP_REST_Request $request ): WP_REST_Response|WP_Error {
+        $token = sanitize_text_field( $request->get_param( 'partner_token' ) );
+        $items = $request->get_param( 'items' );
+
+        if ( ! PPB_Auth::is_valid_token( $token ) ) {
+            return new WP_Error(
+                'ppb_unauthorized',
+                __( 'Jeton partenaire invalide ou expiré.', 'presellia-partner-bridge' ),
+                [ 'status' => 401 ]
+            );
+        }
+
+        if ( empty( $items ) || ! is_array( $items ) ) {
+            return new WP_Error(
+                'ppb_empty_cart',
+                __( 'Le panier envoyé est vide ou invalide.', 'presellia-partner-bridge' ),
+                [ 'status' => 400 ]
+            );
+        }
+
+        $clean_items = [];
+        foreach ( $items as $item ) {
+            if ( ! is_array( $item ) ) {
+                continue;
+            }
+
+            // Gère les deux formats : id/qty et product_id/quantity
+            $product_id   = isset( $item['product_id'] )   ? absint( $item['product_id'] )   : ( isset( $item['id'] ) ? absint( $item['id'] ) : 0 );
+            $variation_id = isset( $item['variation_id'] ) ? absint( $item['variation_id'] ) : 0;
+            $quantity     = isset( $item['quantity'] )     ? absint( $item['quantity'] )     : ( isset( $item['qty'] ) ? absint( $item['qty'] ) : 1 );
+
+            if ( $product_id > 0 && $quantity > 0 ) {
+                $clean_items[] = [
+                    'product_id'   => $product_id,
+                    'variation_id' => $variation_id,
+                    'quantity'     => $quantity,
+                ];
+            }
+        }
+
+        if ( empty( $clean_items ) ) {
+            return new WP_Error(
+                'ppb_invalid_items',
+                __( 'Aucun produit valide trouvé dans le panier.', 'presellia-partner-bridge' ),
+                [ 'status' => 400 ]
+            );
+        }
+
+        $transfer_id = wp_generate_password( 32, false );
+        $transient_key = 'ppb_xfer_' . md5( $transfer_id );
+
+        $session_data = [
+            'partner_token' => $token,
+            'items'         => $clean_items,
+            'created_at'    => time(),
+        ];
+
+        set_transient( $transient_key, $session_data, 15 * MINUTE_IN_SECONDS );
+
+        $redirect_url = add_query_arg( 'sid', $transfer_id, home_url( '/ppb-transfer' ) );
+
+        return new WP_REST_Response( [
+            'success'      => true,
+            'redirect_url' => $redirect_url,
         ] );
     }
 }

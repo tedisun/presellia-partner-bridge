@@ -18,6 +18,7 @@ class PPB_Portal {
 
         add_action( 'wp_enqueue_scripts', [ $this, 'enqueue_scripts' ] );
         add_action( 'template_redirect',  [ $this, 'disable_page_caching' ] );
+        add_action( 'template_redirect',  [ $this, 'handle_bridge_transfer' ] );
 
         // AJAX : chargement du catalogue partenaire (authentifié).
         add_action( 'wp_ajax_nopriv_ppb_load_catalog', [ $this, 'ajax_load_catalog' ] );
@@ -380,5 +381,101 @@ class PPB_Portal {
             'checkout_url' => wc_get_checkout_url(),
             'added'        => $added,
         ] );
+    }
+
+    /**
+     * Intercepte l'URL /ppb-transfer pour restaurer le panier externe,
+     * authentifier le revendeur et le rediriger vers le checkout WooCommerce.
+     */
+    public function handle_bridge_transfer(): void {
+        // Détecte l'URL /ppb-transfer dans l'URI
+        if ( false === strpos( $_SERVER['REQUEST_URI'], '/ppb-transfer' ) ) {
+            return;
+        }
+
+        $sid = isset( $_GET['sid'] ) ? sanitize_text_field( wp_unslash( $_GET['sid'] ) ) : '';
+
+        if ( empty( $sid ) || strlen( $sid ) !== 32 ) {
+            wp_die(
+                esc_html__( 'Identifiant de transfert invalide ou absent.', 'presellia-partner-bridge' ),
+                esc_html__( 'Erreur de transfert', 'presellia-partner-bridge' ),
+                [ 'response' => 400 ]
+            );
+        }
+
+        $transient_key = 'ppb_xfer_' . md5( $sid );
+        $session_data  = get_transient( $transient_key );
+
+        if ( false === $session_data || ! is_array( $session_data ) ) {
+            wp_die(
+                esc_html__( 'Session de transfert expirée ou invalide.', 'presellia-partner-bridge' ),
+                esc_html__( 'Erreur de transfert', 'presellia-partner-bridge' ),
+                [ 'response' => 403 ]
+            );
+        }
+
+        $partner_token = isset( $session_data['partner_token'] ) ? $session_data['partner_token'] : '';
+        $items         = isset( $session_data['items'] ) ? $session_data['items'] : [];
+
+        // 1. Authentifie automatiquement le partenaire sur ce site en posant le cookie
+        if ( ! empty( $partner_token ) ) {
+            $ttl_days = (int) get_option( 'ppb_token_ttl', 30 );
+            setcookie(
+                PPB_Auth::COOKIE_NAME,
+                $partner_token,
+                time() + ( $ttl_days * DAY_IN_SECONDS ),
+                COOKIEPATH,
+                COOKIE_DOMAIN,
+                is_ssl(),
+                true // HttpOnly
+            );
+            $_COOKIE[ PPB_Auth::COOKIE_NAME ] = $partner_token;
+        }
+
+        // 2. Initialise la session WooCommerce si nécessaire
+        if ( null !== WC()->session && ! WC()->session->has_session() ) {
+            WC()->session->set_customer_session_cookie( true );
+        }
+
+        // 3. Vide le panier WC existant
+        if ( null !== WC()->cart ) {
+            WC()->cart->empty_cart();
+        }
+
+        // 4. Injecte les produits dans le panier
+        $added = 0;
+        foreach ( $items as $item ) {
+            $product_id   = isset( $item['product_id'] )   ? absint( $item['product_id'] )   : 0;
+            $variation_id = isset( $item['variation_id'] ) ? absint( $item['variation_id'] ) : 0;
+            $quantity     = isset( $item['quantity'] )     ? absint( $item['quantity'] )     : 1;
+
+            if ( $product_id > 0 && $quantity > 0 ) {
+                $result = WC()->cart->add_to_cart( $product_id, $quantity, $variation_id );
+                if ( $result ) {
+                    $added++;
+                }
+            }
+        }
+
+        // 5. Supprime le transient pour rendre le lien à usage unique
+        delete_transient( $transient_key );
+
+        if ( 0 === $added ) {
+            wp_die(
+                esc_html__( 'Impossible d\'ajouter les produits au panier.', 'presellia-partner-bridge' ),
+                esc_html__( 'Erreur panier', 'presellia-partner-bridge' ),
+                [ 'response' => 500 ]
+            );
+        }
+
+        PPB_Logger::info(
+            'bridge_transfer_success',
+            "Transfert réussi via le pont : {$added} article(s)",
+            [ 'items_count' => $added, 'ip' => PPB_Auth::get_ip() ]
+        );
+
+        // 6. Redirige proprement vers la page de paiement native
+        wp_safe_redirect( wc_get_checkout_url() );
+        exit;
     }
 }

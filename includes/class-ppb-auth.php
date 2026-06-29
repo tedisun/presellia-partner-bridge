@@ -150,9 +150,9 @@ class PPB_Auth {
     }
 
     /**
-     * Valide un token contre les transients stockés.
+     * Valide publiquement un token (utilisé par l'API REST).
      */
-    private function validate_token( string $token ): bool {
+    public static function is_valid_token( string $token ): bool {
         if ( empty( $token ) || strlen( $token ) !== 64 ) {
             return false;
         }
@@ -160,6 +160,13 @@ class PPB_Auth {
         $data = get_transient( self::TRANSIENT_PREFIX . md5( $token ) );
 
         return false !== $data;
+    }
+
+    /**
+     * Valide un token contre les transients stockés.
+     */
+    private function validate_token( string $token ): bool {
+        return self::is_valid_token( $token );
     }
 
     /**
