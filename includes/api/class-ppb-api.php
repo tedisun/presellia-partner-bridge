@@ -18,6 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  *  POST /ppb/v1/products/{id}/price → met à jour le prix partenaire d'un produit
  *  GET  /ppb/v1/tokens              → nombre de tokens actifs
  *  POST /ppb/v1/tokens/revoke-all   → révoque tous les tokens
+ *  POST /ppb/v1/cache/clear         → vide le cache du catalogue (ppb_catalog_cache)
  */
 class PPB_Api {
 
@@ -63,6 +64,12 @@ class PPB_Api {
         register_rest_route( self::NAMESPACE, '/logs/clear', [
             'methods'             => WP_REST_Server::CREATABLE,
             'callback'            => [ $this, 'clear_logs' ],
+            'permission_callback' => [ $this, 'check_api_key' ],
+        ] );
+
+        register_rest_route( self::NAMESPACE, '/cache/clear', [
+            'methods'             => WP_REST_Server::CREATABLE,
+            'callback'            => [ $this, 'clear_catalog_cache' ],
             'permission_callback' => [ $this, 'check_api_key' ],
         ] );
 
@@ -207,6 +214,21 @@ class PPB_Api {
         return new WP_REST_Response( [
             'success' => true,
             'message' => __( 'Logs vidés.', 'presellia-partner-bridge' ),
+        ] );
+    }
+
+    // -------------------------------------------------------------------------
+    // POST /cache/clear
+    // -------------------------------------------------------------------------
+
+    public function clear_catalog_cache(): WP_REST_Response {
+        PPB_Pricing::clear_cache();
+
+        PPB_Logger::info( 'api_cache_cleared', 'Cache du catalogue vidé manuellement via API', [] );
+
+        return new WP_REST_Response( [
+            'success' => true,
+            'message' => __( 'Cache du catalogue vidé.', 'presellia-partner-bridge' ),
         ] );
     }
 

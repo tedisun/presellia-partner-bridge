@@ -1,5 +1,10 @@
 # Changelog — Presellia Partner Bridge
 
+## [2.5.0] — 2026-07-09
+
+### Ajouté
+- **Endpoint `POST /wp-json/ppb/v1/cache/clear`** : vide manuellement le cache du catalogue (`ppb_catalog_cache`, transient 24h) sur demande, sur le même modèle que `/logs/clear`. Protégé par clé API admin (`X-PPB-API-Key`). Utile pour forcer la fraîcheur des données stock/prix sans attendre l'expiration naturelle du cache ou une sauvegarde produit.
+
 ## [2.4.0] — 2026-06-29
 
 ### Ajouté
