@@ -1,5 +1,14 @@
 # Changelog — Presellia Partner Bridge
 
+## [2.6.0] — 2026-07-09
+
+### Ajouté
+- **Authentification headless sans nonce** : `PPB_Auth::authenticate_portal()`, méthode statique réutilisant la validation de mot de passe et la génération de jeton existantes, sans dépendre d'un nonce WP (incompatible avec une SPA sur une origine séparée). Limitée en débit par IP (10 tentatives / 15 min) pour compenser l'absence de nonce sur une surface de mot de passe partagé.
+- **`POST /wp-json/ppb/v1/portal/login`** : authentifie un mot de passe portail, retourne `{token, expires_days}`. Sans clé API (accessible à quiconque connaît le mot de passe partenaire, comme le flux AJAX existant).
+- **`GET /wp-json/ppb/v1/portal/catalog`** : retourne `PPB_Pricing::get_catalog()`, protégé par jeton partenaire valide (`?token=`) plutôt que par la clé API admin, puisque cet endpoint doit être appelable depuis le navigateur d'un revendeur.
+- **CORS scopé** : headers `Access-Control-Allow-Origin` ajoutés uniquement sur les routes `/ppb/v1/portal/*`, restreints à l'origine exacte configurée dans le nouveau réglage "Origine CORS portail headless" (WooCommerce > PPB Réglages > Portail Partenaire). Aucune origine par défaut — vide = tous les appels cross-origin bloqués.
+- Prépare l'intégration du portail revendeur headless (`presellia-partner-portal`, repo séparé) — voir sa documentation pour le contrat API consommé.
+
 ## [2.5.0] — 2026-07-09
 
 ### Ajouté

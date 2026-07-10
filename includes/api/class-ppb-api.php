@@ -19,6 +19,11 @@ if ( ! defined( 'ABSPATH' ) ) {
  *  GET  /ppb/v1/tokens              → nombre de tokens actifs
  *  POST /ppb/v1/tokens/revoke-all   → révoque tous les tokens
  *  POST /ppb/v1/cache/clear         → vide le cache du catalogue (ppb_catalog_cache)
+ *  POST /ppb/v1/portal/login        → authentifie un mot de passe portail, sans nonce (SPA headless)
+ *  GET  /ppb/v1/portal/catalog      → catalogue avec prix partenaires, protégé par jeton (pas par clé API)
+ *
+ * CORS : les routes /portal/* renvoient des headers Access-Control-Allow-Origin
+ * restreints à l'origine configurée dans ppb_portal_cors_origin (réglages PPB).
  */
 class PPB_Api {
 
@@ -26,6 +31,7 @@ class PPB_Api {
 
     public function __construct() {
         add_action( 'rest_api_init', [ $this, 'register_routes' ] );
+        add_filter( 'rest_pre_serve_request', [ $this, 'add_cors_headers' ], 10, 4 );
     }
 
     public function register_routes(): void {
@@ -125,6 +131,31 @@ class PPB_Api {
                 ],
             ],
         ] );
+
+        register_rest_route( self::NAMESPACE, '/portal/login', [
+            'methods'             => WP_REST_Server::CREATABLE,
+            'callback'            => [ $this, 'portal_login' ],
+            'permission_callback' => '__return_true',
+            'args'                => [
+                'password' => [
+                    'type'     => 'string',
+                    'required' => true,
+                ],
+            ],
+        ] );
+
+        register_rest_route( self::NAMESPACE, '/portal/catalog', [
+            'methods'             => WP_REST_Server::READABLE,
+            'callback'            => [ $this, 'portal_catalog' ],
+            'permission_callback' => [ $this, 'check_portal_token' ],
+            'args'                => [
+                'token' => [
+                    'type'              => 'string',
+                    'required'          => true,
+                    'sanitize_callback' => 'sanitize_text_field',
+                ],
+            ],
+        ] );
     }
 
     // -------------------------------------------------------------------------
@@ -164,6 +195,51 @@ class PPB_Api {
         }
 
         return true;
+    }
+
+    /**
+     * Permission callback pour /portal/catalog : exige un jeton partenaire
+     * valide (pas la clé API admin) puisque cet endpoint expose les prix
+     * partenaires à quiconque connaît un jeton de session portail.
+     */
+    public function check_portal_token( WP_REST_Request $request ): bool|WP_Error {
+        $token = sanitize_text_field( (string) $request->get_param( 'token' ) );
+
+        if ( ! PPB_Auth::is_valid_token( $token ) ) {
+            return new WP_Error(
+                'ppb_unauthorized',
+                __( 'Jeton partenaire invalide ou expiré.', 'presellia-partner-bridge' ),
+                [ 'status' => 401 ]
+            );
+        }
+
+        return true;
+    }
+
+    /**
+     * Ajoute les headers CORS sur les routes /portal/* uniquement, restreints
+     * à l'origine configurée en admin (jamais '*' — ces routes exposent des
+     * prix partenaires). Sans origine configurée, aucun header n'est ajouté :
+     * le navigateur bloquera par défaut les appels cross-origin.
+     */
+    public function add_cors_headers( $served, $result, $request, $server ) {
+        $route = $request->get_route();
+
+        if ( ! str_starts_with( $route, '/' . self::NAMESPACE . '/portal/' ) ) {
+            return $served;
+        }
+
+        $allowed_origin = get_option( 'ppb_portal_cors_origin', '' );
+        $request_origin = $request->get_header( 'origin' );
+
+        if ( $allowed_origin && $request_origin && $request_origin === $allowed_origin ) {
+            header( 'Access-Control-Allow-Origin: ' . esc_url_raw( $allowed_origin ) );
+            header( 'Access-Control-Allow-Methods: GET, POST, OPTIONS' );
+            header( 'Access-Control-Allow-Headers: Content-Type' );
+            header( 'Vary: Origin' );
+        }
+
+        return $served;
     }
 
     // -------------------------------------------------------------------------
@@ -378,6 +454,42 @@ class PPB_Api {
         return new WP_REST_Response( [
             'success'      => true,
             'redirect_url' => $redirect_url,
+        ] );
+    }
+
+    // -------------------------------------------------------------------------
+    // POST /portal/login
+    // -------------------------------------------------------------------------
+
+    public function portal_login( WP_REST_Request $request ): WP_REST_Response|WP_Error {
+        $password = (string) $request->get_param( 'password' );
+
+        $token = PPB_Auth::authenticate_portal( $password );
+
+        if ( false === $token ) {
+            return new WP_Error(
+                'ppb_invalid_password',
+                __( 'Mot de passe incorrect.', 'presellia-partner-bridge' ),
+                [ 'status' => 403 ]
+            );
+        }
+
+        return new WP_REST_Response( [
+            'token'        => $token,
+            'expires_days' => (int) get_option( 'ppb_token_ttl', 30 ),
+        ] );
+    }
+
+    // -------------------------------------------------------------------------
+    // GET /portal/catalog
+    // -------------------------------------------------------------------------
+
+    public function portal_catalog(): WP_REST_Response {
+        $catalog = PPB_Pricing::get_catalog();
+
+        return new WP_REST_Response( [
+            'count'    => count( $catalog ),
+            'products' => $catalog,
         ] );
     }
 }

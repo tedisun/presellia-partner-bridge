@@ -25,6 +25,15 @@ class PPB_Auth {
     /** Préfixe des transients de tokens. */
     private const TRANSIENT_PREFIX = 'ppb_t_';
 
+    /** Préfixe des transients de limitation de débit (login REST headless). */
+    private const RATE_LIMIT_PREFIX = 'ppb_rl_';
+
+    /** Nombre max de tentatives de mot de passe par IP dans la fenêtre. */
+    private const RATE_LIMIT_MAX_ATTEMPTS = 10;
+
+    /** Fenêtre de limitation de débit, en secondes. */
+    private const RATE_LIMIT_WINDOW = 15 * MINUTE_IN_SECONDS;
+
     public function __construct() {
         add_action( 'init',          [ $this, 'check_authentication' ], 1 );
         add_action( 'wp_ajax_nopriv_ppb_validate_password', [ $this, 'ajax_validate_password' ] );
@@ -160,6 +169,66 @@ class PPB_Auth {
         $data = get_transient( self::TRANSIENT_PREFIX . md5( $token ) );
 
         return false !== $data;
+    }
+
+    /**
+     * Authentifie un mot de passe portail et génère un token si valide.
+     * Utilisé par l'API REST headless (/wp-json/ppb/v1/portal/login) — pas de
+     * nonce WP requis (contrairement à ajax_validate_password), pas de cookie
+     * posé ici : le token est retourné dans la réponse JSON, à gérer côté client.
+     * Limité en débit par IP pour éviter le brute-force du mot de passe partagé.
+     *
+     * @return string|false Le token généré (64 hex) ou false si invalide/limité.
+     */
+    public static function authenticate_portal( string $password ): string|false {
+        if ( self::is_rate_limited() ) {
+            PPB_Logger::warning( 'auth_rate_limited', 'Trop de tentatives de connexion portail (REST)', [ 'ip' => self::get_ip() ] );
+            return false;
+        }
+
+        $password    = trim( $password );
+        $stored_hash = get_option( 'ppb_portal_password_hash', '' );
+
+        if ( empty( $password ) || empty( $stored_hash ) || ! wp_check_password( $password, $stored_hash ) ) {
+            self::register_login_attempt();
+            PPB_Logger::warning( 'auth_failed_rest', 'Tentative de connexion échouée via API REST', [ 'ip' => self::get_ip() ] );
+            return false;
+        }
+
+        $token    = bin2hex( random_bytes( 32 ) );
+        $ttl_days = (int) get_option( 'ppb_token_ttl', 30 );
+
+        set_transient(
+            self::TRANSIENT_PREFIX . md5( $token ),
+            [
+                'created_at' => time(),
+                'ip'         => self::get_ip(),
+            ],
+            $ttl_days * DAY_IN_SECONDS
+        );
+
+        PPB_Logger::info( 'auth_success_rest', 'Authentification réussie via API REST portail', [ 'ip' => self::get_ip() ] );
+
+        return $token;
+    }
+
+    /**
+     * true si l'IP courante a dépassé le nombre de tentatives autorisées.
+     */
+    private static function is_rate_limited(): bool {
+        $attempts = (int) get_transient( self::RATE_LIMIT_PREFIX . md5( self::get_ip() ) );
+
+        return $attempts >= self::RATE_LIMIT_MAX_ATTEMPTS;
+    }
+
+    /**
+     * Incrémente le compteur de tentatives échouées pour l'IP courante.
+     */
+    private static function register_login_attempt(): void {
+        $key      = self::RATE_LIMIT_PREFIX . md5( self::get_ip() );
+        $attempts = (int) get_transient( $key );
+
+        set_transient( $key, $attempts + 1, self::RATE_LIMIT_WINDOW );
     }
 
     /**

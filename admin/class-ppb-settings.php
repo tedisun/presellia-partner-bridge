@@ -62,6 +62,7 @@ class PPB_Settings {
         register_setting( self::OPTION_GROUP, 'ppb_portal_logo_url',      [ 'sanitize_callback' => 'esc_url_raw' ] );
         register_setting( self::OPTION_GROUP, 'ppb_access_request_url',   [ 'sanitize_callback' => 'esc_url_raw' ] );
         register_setting( self::OPTION_GROUP, 'ppb_tutorial_video_url',   [ 'sanitize_callback' => 'esc_url_raw' ] );
+        register_setting( self::OPTION_GROUP, 'ppb_portal_cors_origin',   [ 'sanitize_callback' => 'esc_url_raw' ] );
 
         // Groupe catalogue public
         register_setting( self::OPTION_GROUP_CATALOG, 'ppb_catalog_page_id', [ 'sanitize_callback' => 'absint' ] );
@@ -352,6 +353,13 @@ class PPB_Settings {
                             <td>
                                 <input type="number" name="ppb_token_ttl" value="<?php echo esc_attr( get_option( 'ppb_token_ttl', 30 ) ); ?>" min="0" max="365" style="width:80px"> <?php esc_html_e( 'jours (0 = pas d\'expiration)', 'presellia-partner-bridge' ); ?>
                                 <p class="description"><?php esc_html_e( 'Durée avant qu\'un partenaire doive re-saisir le mot de passe.', 'presellia-partner-bridge' ); ?></p>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th><?php esc_html_e( 'Origine CORS portail headless', 'presellia-partner-bridge' ); ?></th>
+                            <td>
+                                <input type="url" name="ppb_portal_cors_origin" value="<?php echo esc_attr( get_option( 'ppb_portal_cors_origin', '' ) ); ?>" class="regular-text" placeholder="https://portail.presellia.com">
+                                <p class="description"><?php esc_html_e( 'Origine exacte (schéma + domaine, sans slash final) autorisée à appeler /wp-json/ppb/v1/portal/*. Laisser vide bloque tous les appels cross-origin vers ces routes.', 'presellia-partner-bridge' ); ?></p>
                             </td>
                         </tr>
                     </table>
