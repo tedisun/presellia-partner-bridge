@@ -102,8 +102,9 @@
 }
 
 /* ---- Badges statut ---- */
-.ppb-badge-ok   { color: #27ae60; font-weight: 600; }
-.ppb-badge-warn { color: #d68910; font-weight: 600; }
+.ppb-badge-ok    { color: #27ae60; font-weight: 600; }
+.ppb-badge-warn  { color: #d68910; font-weight: 600; }
+.ppb-badge-error { color: #c0392b; font-weight: 600; }
 
 /* ---- Cellule prix avec bouton paliers ---- */
 .ppb-price-cell {

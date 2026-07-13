@@ -16,6 +16,9 @@ wp_clear_scheduled_hook( 'ppb_weekly_cleanup' );
 // Supprime la table de logs.
 $wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}ppb_logs" );
 
+// Supprime la table des demandes d'accès portail.
+$wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}ppb_partner_requests" );
+
 // Supprime toutes les options PPB.
 $options = [
     'ppb_portal_password_hash',

@@ -21,6 +21,9 @@ if ( ! defined( 'ABSPATH' ) ) {
  *  POST /ppb/v1/cache/clear         → vide le cache du catalogue (ppb_catalog_cache)
  *  POST /ppb/v1/portal/login        → authentifie un mot de passe portail, sans nonce (SPA headless)
  *  GET  /ppb/v1/portal/catalog      → catalogue avec prix partenaires, protégé par jeton (pas par clé API)
+ *  POST /ppb/v1/portal/registration → demande d'accès portail (publique, limitée en débit) — file consultée dans Réglages PPB
+ *  GET  /ppb/v1/portal/orders       → historique de commandes par email, protégé par jeton
+ *  GET  /ppb/v1/portal/product/{id}/description → description produit (texte brut), protégé par jeton
  *
  * CORS : les routes /portal/* renvoient des headers Access-Control-Allow-Origin
  * restreints à l'origine configurée dans ppb_portal_cors_origin (réglages PPB).
@@ -149,6 +152,77 @@ class PPB_Api {
             'callback'            => [ $this, 'portal_catalog' ],
             'permission_callback' => [ $this, 'check_portal_token' ],
             'args'                => [
+                'token' => [
+                    'type'              => 'string',
+                    'required'          => true,
+                    'sanitize_callback' => 'sanitize_text_field',
+                ],
+            ],
+        ] );
+
+        register_rest_route( self::NAMESPACE, '/portal/registration', [
+            'methods'             => WP_REST_Server::CREATABLE,
+            'callback'            => [ $this, 'submit_registration' ],
+            'permission_callback' => '__return_true',
+            'args'                => [
+                'full_name' => [
+                    'type'              => 'string',
+                    'required'          => true,
+                    'sanitize_callback' => 'sanitize_text_field',
+                ],
+                'whatsapp' => [
+                    'type'              => 'string',
+                    'required'          => true,
+                    'sanitize_callback' => 'sanitize_text_field',
+                ],
+                'email' => [
+                    'type'              => 'string',
+                    'required'          => true,
+                    'sanitize_callback' => 'sanitize_email',
+                ],
+                'business' => [
+                    'type'              => 'string',
+                    'required'          => false,
+                    'default'           => '',
+                    'sanitize_callback' => 'sanitize_text_field',
+                ],
+                'message' => [
+                    'type'              => 'string',
+                    'required'          => false,
+                    'default'           => '',
+                    'sanitize_callback' => 'sanitize_textarea_field',
+                ],
+            ],
+        ] );
+
+        register_rest_route( self::NAMESPACE, '/portal/orders', [
+            'methods'             => WP_REST_Server::READABLE,
+            'callback'            => [ $this, 'portal_orders' ],
+            'permission_callback' => [ $this, 'check_portal_token' ],
+            'args'                => [
+                'token' => [
+                    'type'              => 'string',
+                    'required'          => true,
+                    'sanitize_callback' => 'sanitize_text_field',
+                ],
+                'email' => [
+                    'type'              => 'string',
+                    'required'          => true,
+                    'sanitize_callback' => 'sanitize_email',
+                ],
+            ],
+        ] );
+
+        register_rest_route( self::NAMESPACE, '/portal/product/(?P<id>\d+)/description', [
+            'methods'             => WP_REST_Server::READABLE,
+            'callback'            => [ $this, 'portal_product_description' ],
+            'permission_callback' => [ $this, 'check_portal_token' ],
+            'args'                => [
+                'id' => [
+                    'type'              => 'integer',
+                    'required'          => true,
+                    'sanitize_callback' => 'absint',
+                ],
                 'token' => [
                     'type'              => 'string',
                     'required'          => true,
@@ -490,6 +564,112 @@ class PPB_Api {
         return new WP_REST_Response( [
             'count'    => count( $catalog ),
             'products' => $catalog,
+        ] );
+    }
+
+    // -------------------------------------------------------------------------
+    // POST /portal/registration
+    // -------------------------------------------------------------------------
+
+    /**
+     * Reçoit une demande d'accès au portail (formulaire public, sans jeton).
+     * N'accorde aucun accès automatiquement — alimente la file consultée dans
+     * WooCommerce > PPB Réglages > Demandes d'accès, traitée manuellement par
+     * l'équipe (le mot de passe reste partagé, jamais envoyé automatiquement).
+     */
+    public function submit_registration( WP_REST_Request $request ): WP_REST_Response|WP_Error {
+        if ( PPB_Rate_Limiter::is_limited( 'registration', 5, 15 * MINUTE_IN_SECONDS ) ) {
+            return new WP_Error(
+                'ppb_rate_limited',
+                __( 'Trop de demandes envoyées depuis cette adresse. Réessayez plus tard.', 'presellia-partner-bridge' ),
+                [ 'status' => 429 ]
+            );
+        }
+
+        PPB_Rate_Limiter::register_attempt( 'registration', 15 * MINUTE_IN_SECONDS );
+
+        $id = PPB_Requests::create( [
+            'full_name' => (string) $request->get_param( 'full_name' ),
+            'whatsapp'  => (string) $request->get_param( 'whatsapp' ),
+            'email'     => (string) $request->get_param( 'email' ),
+            'business'  => (string) $request->get_param( 'business' ),
+            'message'   => (string) $request->get_param( 'message' ),
+        ] );
+
+        PPB_Logger::info(
+            'registration_submitted',
+            "Nouvelle demande d'accès portail reçue (#{$id})",
+            [ 'ip' => PPB_Auth::get_ip() ]
+        );
+
+        return new WP_REST_Response( [ 'success' => true ] );
+    }
+
+    // -------------------------------------------------------------------------
+    // GET /portal/orders
+    // -------------------------------------------------------------------------
+
+    /**
+     * Historique de commandes en libre-service par email, gardé par jeton
+     * partenaire (pas d'accès public) — évite le risque d'énumération d'emails
+     * sans avoir besoin d'un rate-limiting dédié, puisqu'il faut déjà connaître
+     * le mot de passe partagé pour obtenir un jeton valide.
+     */
+    public function portal_orders( WP_REST_Request $request ): WP_REST_Response {
+        $email = (string) $request->get_param( 'email' );
+
+        $orders = wc_get_orders( [
+            'billing_email' => $email,
+            'limit'          => 50,
+            'orderby'        => 'date',
+            'order'          => 'DESC',
+        ] );
+
+        $summaries = [];
+        foreach ( $orders as $order ) {
+            $date          = $order->get_date_created();
+            $summaries[] = [
+                'id'     => $order->get_id(),
+                'date'   => $date ? $date->date( 'Y-m-d' ) : '',
+                'status' => $order->get_status(),
+                'total'  => (float) $order->get_total(),
+            ];
+        }
+
+        return new WP_REST_Response( [
+            'count'  => count( $summaries ),
+            'orders' => $summaries,
+        ] );
+    }
+
+    // -------------------------------------------------------------------------
+    // GET /portal/product/{id}/description
+    // -------------------------------------------------------------------------
+
+    public function portal_product_description( WP_REST_Request $request ): WP_REST_Response|WP_Error {
+        $product_id = (int) $request->get_param( 'id' );
+        $product    = wc_get_product( $product_id );
+
+        if ( ! $product ) {
+            return new WP_Error(
+                'ppb_product_not_found',
+                __( 'Produit introuvable.', 'presellia-partner-bridge' ),
+                [ 'status' => 404 ]
+            );
+        }
+
+        $description = trim( wp_strip_all_tags( $product->get_description() ) );
+
+        if ( '' === $description ) {
+            $description = trim( wp_strip_all_tags( $product->get_short_description() ) );
+        }
+
+        if ( '' === $description ) {
+            $description = __( 'Aucune description disponible pour ce produit pour le moment.', 'presellia-partner-bridge' );
+        }
+
+        return new WP_REST_Response( [
+            'description' => $description,
         ] );
     }
 }

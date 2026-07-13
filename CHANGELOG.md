@@ -1,5 +1,14 @@
 # Changelog — Presellia Partner Bridge
 
+## [2.7.0] — 2026-07-13
+
+### Ajouté
+- **File de demandes d'accès portail** : nouvelle table `wp_ppb_partner_requests` et classe `PPB_Requests`, gérée depuis un nouvel onglet "Demandes d'accès" dans WooCommerce > PPB Réglages, avec boutons Approuver/Refuser (aucun envoi automatique du mot de passe partagé — choix délibéré, l'équipe contacte toujours le revendeur manuellement après approbation).
+- **`POST /wp-json/ppb/v1/portal/registration`** : reçoit une demande d'accès (nom, WhatsApp, email, activité/message optionnels), publique mais limitée en débit (5 tentatives / 15 min par IP via le nouveau `PPB_Rate_Limiter`, indépendant du limiteur du login). Sous `/portal/` pour hériter du CORS scopé existant (`add_cors_headers()` ne couvre que ce préfixe).
+- **`GET /wp-json/ppb/v1/portal/orders`** : historique de commandes par email (`wc_get_orders`, compatible HPOS), protégé par jeton partenaire — pas d'endpoint public, donc pas de risque d'énumération d'emails sans rate-limiting dédié.
+- **`GET /wp-json/ppb/v1/portal/product/{id}/description`** : description produit en texte brut (HTML retiré), protégé par jeton partenaire.
+- **`PPB_Activator::maybe_upgrade()`** : rejoue les migrations de base de données (idempotentes) à chaque chargement si `ppb_db_version` diffère de `PPB_VERSION` — nécessaire car une mise à jour en place (releaser GitHub) ne redéclenche jamais `register_activation_hook`, donc une table ajoutée dans une nouvelle version n'aurait jamais été créée sur un site déjà en production sans ce mécanisme.
+
 ## [2.6.0] — 2026-07-09
 
 ### Ajouté

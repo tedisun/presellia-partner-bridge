@@ -57,6 +57,8 @@ class PPB_Plugin {
     private function load_dependencies(): void {
         // --- Modules core (toujours chargés) ---
         require_once PPB_PLUGIN_DIR . 'includes/class-ppb-logger.php';
+        require_once PPB_PLUGIN_DIR . 'includes/class-ppb-requests.php';
+        require_once PPB_PLUGIN_DIR . 'includes/class-ppb-rate-limiter.php';
         require_once PPB_PLUGIN_DIR . 'includes/class-ppb-auth.php';
         require_once PPB_PLUGIN_DIR . 'includes/class-ppb-pricing.php';
         require_once PPB_PLUGIN_DIR . 'includes/class-ppb-portal.php';

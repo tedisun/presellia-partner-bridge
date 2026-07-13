@@ -79,6 +79,23 @@ class PPB_Settings {
 
         $current_tab = isset( $_GET['tab'] ) ? sanitize_key( $_GET['tab'] ) : 'partner';
 
+        // Traitement des actions Approuver/Refuser sur une demande d'accès.
+        if (
+            'requests' === $current_tab &&
+            isset( $_POST['ppb_action'], $_POST['ppb_request_id'], $_POST['ppb_requests_nonce'] ) &&
+            in_array( $_POST['ppb_action'], [ 'approve_request', 'reject_request' ], true ) &&
+            wp_verify_nonce( sanitize_key( $_POST['ppb_requests_nonce'] ), 'ppb_requests' )
+        ) {
+            $status = 'approve_request' === $_POST['ppb_action'] ? 'approved' : 'rejected';
+            PPB_Requests::update_status( absint( $_POST['ppb_request_id'] ), $status, get_current_user_id() );
+
+            PPB_Logger::info(
+                'partner_request_reviewed',
+                "Demande d'accès #{$_POST['ppb_request_id']} marquée '{$status}'",
+                []
+            );
+        }
+
         // Traitement du formulaire mot de passe (hors Settings API car on ne stocke jamais le mdp en clair).
         $password_updated = false;
         $password_error   = '';
@@ -124,9 +141,11 @@ class PPB_Settings {
 
         $pages = get_pages( [ 'post_status' => 'publish' ] );
 
-        $tab_partner_url = admin_url( 'admin.php?page=' . self::MENU_SLUG . '&tab=partner' );
-        $tab_catalog_url = admin_url( 'admin.php?page=' . self::MENU_SLUG . '&tab=catalog' );
-        $tab_logs_url    = admin_url( 'admin.php?page=' . self::MENU_SLUG . '&tab=logs' );
+        $tab_partner_url  = admin_url( 'admin.php?page=' . self::MENU_SLUG . '&tab=partner' );
+        $tab_catalog_url  = admin_url( 'admin.php?page=' . self::MENU_SLUG . '&tab=catalog' );
+        $tab_logs_url     = admin_url( 'admin.php?page=' . self::MENU_SLUG . '&tab=logs' );
+        $tab_requests_url = admin_url( 'admin.php?page=' . self::MENU_SLUG . '&tab=requests' );
+        $pending_requests_count = PPB_Requests::count_pending();
         ?>
         <div class="wrap">
             <h1><?php esc_html_e( 'Presellia Partner Bridge — Réglages', 'presellia-partner-bridge' ); ?></h1>
@@ -170,12 +189,19 @@ class PPB_Settings {
             <!-- Onglets de navigation -->
             <nav class="nav-tab-wrapper" style="margin-bottom: 20px;">
                 <a href="<?php echo esc_url( $tab_partner_url ); ?>"
-                   class="nav-tab <?php echo ( 'partner' === $current_tab || ( 'catalog' !== $current_tab && 'logs' !== $current_tab ) ) ? 'nav-tab-active' : ''; ?>">
+                   class="nav-tab <?php echo ( 'partner' === $current_tab || ( 'catalog' !== $current_tab && 'logs' !== $current_tab && 'requests' !== $current_tab ) ) ? 'nav-tab-active' : ''; ?>">
                     🤝 <?php esc_html_e( 'Portail Partenaire', 'presellia-partner-bridge' ); ?>
                 </a>
                 <a href="<?php echo esc_url( $tab_catalog_url ); ?>"
                    class="nav-tab <?php echo 'catalog' === $current_tab ? 'nav-tab-active' : ''; ?>">
                     📋 <?php esc_html_e( 'Catalogue Public', 'presellia-partner-bridge' ); ?>
+                </a>
+                <a href="<?php echo esc_url( $tab_requests_url ); ?>"
+                   class="nav-tab <?php echo 'requests' === $current_tab ? 'nav-tab-active' : ''; ?>">
+                    📨 <?php esc_html_e( 'Demandes d\'accès', 'presellia-partner-bridge' ); ?>
+                    <?php if ( $pending_requests_count > 0 ) : ?>
+                        <span class="ppb-badge-warn" style="margin-left:4px;"><?php echo esc_html( $pending_requests_count ); ?></span>
+                    <?php endif; ?>
                 </a>
                 <a href="<?php echo esc_url( $tab_logs_url ); ?>"
                    class="nav-tab <?php echo 'logs' === $current_tab ? 'nav-tab-active' : ''; ?>">
@@ -183,7 +209,81 @@ class PPB_Settings {
                 </a>
             </nav>
 
-            <?php if ( 'logs' === $current_tab ) : ?>
+            <?php if ( 'requests' === $current_tab ) : ?>
+
+                <h2><?php esc_html_e( 'Demandes d\'accès au portail', 'presellia-partner-bridge' ); ?></h2>
+                <p class="description" style="margin-bottom:16px;">
+                    <?php esc_html_e( 'Soumises depuis le formulaire "Demander l\'accès" du portail headless. Approuver ou refuser ne transmet rien automatiquement : contactez le revendeur manuellement (WhatsApp/email) pour lui communiquer le mot de passe partagé après approbation.', 'presellia-partner-bridge' ); ?>
+                </p>
+
+                <?php
+                $requests_status = isset( $_GET['status'] ) ? sanitize_key( $_GET['status'] ) : '';
+                $requests        = PPB_Requests::list( $requests_status );
+                $status_labels   = [
+                    'pending'  => __( 'En attente', 'presellia-partner-bridge' ),
+                    'approved' => __( 'Approuvée', 'presellia-partner-bridge' ),
+                    'rejected' => __( 'Refusée', 'presellia-partner-bridge' ),
+                ];
+                ?>
+
+                <div style="margin-bottom:16px; display:flex; gap:8px;">
+                    <a class="button <?php echo '' === $requests_status ? 'button-primary' : ''; ?>" href="<?php echo esc_url( $tab_requests_url ); ?>"><?php esc_html_e( 'Toutes', 'presellia-partner-bridge' ); ?></a>
+                    <a class="button <?php echo 'pending' === $requests_status ? 'button-primary' : ''; ?>" href="<?php echo esc_url( $tab_requests_url . '&status=pending' ); ?>"><?php esc_html_e( 'En attente', 'presellia-partner-bridge' ); ?></a>
+                    <a class="button <?php echo 'approved' === $requests_status ? 'button-primary' : ''; ?>" href="<?php echo esc_url( $tab_requests_url . '&status=approved' ); ?>"><?php esc_html_e( 'Approuvées', 'presellia-partner-bridge' ); ?></a>
+                    <a class="button <?php echo 'rejected' === $requests_status ? 'button-primary' : ''; ?>" href="<?php echo esc_url( $tab_requests_url . '&status=rejected' ); ?>"><?php esc_html_e( 'Refusées', 'presellia-partner-bridge' ); ?></a>
+                </div>
+
+                <table class="widefat striped">
+                    <thead>
+                        <tr>
+                            <th><?php esc_html_e( 'Date', 'presellia-partner-bridge' ); ?></th>
+                            <th><?php esc_html_e( 'Nom', 'presellia-partner-bridge' ); ?></th>
+                            <th><?php esc_html_e( 'WhatsApp', 'presellia-partner-bridge' ); ?></th>
+                            <th><?php esc_html_e( 'Email', 'presellia-partner-bridge' ); ?></th>
+                            <th><?php esc_html_e( 'Activité', 'presellia-partner-bridge' ); ?></th>
+                            <th><?php esc_html_e( 'Message', 'presellia-partner-bridge' ); ?></th>
+                            <th><?php esc_html_e( 'Statut', 'presellia-partner-bridge' ); ?></th>
+                            <th><?php esc_html_e( 'Actions', 'presellia-partner-bridge' ); ?></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php if ( empty( $requests ) ) : ?>
+                            <tr>
+                                <td colspan="8"><?php esc_html_e( 'Aucune demande pour le moment.', 'presellia-partner-bridge' ); ?></td>
+                            </tr>
+                        <?php else : ?>
+                            <?php foreach ( $requests as $req ) : ?>
+                                <tr>
+                                    <td><code><?php echo esc_html( $req['created_at'] ); ?></code></td>
+                                    <td><?php echo esc_html( $req['full_name'] ); ?></td>
+                                    <td><?php echo esc_html( $req['whatsapp'] ); ?></td>
+                                    <td><a href="mailto:<?php echo esc_attr( $req['email'] ); ?>"><?php echo esc_html( $req['email'] ); ?></a></td>
+                                    <td><?php echo esc_html( $req['business'] ?: '—' ); ?></td>
+                                    <td><?php echo esc_html( $req['message'] ?: '—' ); ?></td>
+                                    <td>
+                                        <span class="ppb-badge-<?php echo 'pending' === $req['status'] ? 'warn' : ( 'approved' === $req['status'] ? 'ok' : 'error' ); ?>">
+                                            <?php echo esc_html( $status_labels[ $req['status'] ] ?? $req['status'] ); ?>
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <?php if ( 'pending' === $req['status'] ) : ?>
+                                            <form method="post" style="display:inline-block;">
+                                                <?php wp_nonce_field( 'ppb_requests', 'ppb_requests_nonce' ); ?>
+                                                <input type="hidden" name="ppb_request_id" value="<?php echo esc_attr( $req['id'] ); ?>">
+                                                <button type="submit" name="ppb_action" value="approve_request" class="button button-small"><?php esc_html_e( 'Approuver', 'presellia-partner-bridge' ); ?></button>
+                                                <button type="submit" name="ppb_action" value="reject_request" class="button button-small button-link-delete"><?php esc_html_e( 'Refuser', 'presellia-partner-bridge' ); ?></button>
+                                            </form>
+                                        <?php else : ?>
+                                            <span class="description">—</span>
+                                        <?php endif; ?>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </tbody>
+                </table>
+
+            <?php elseif ( 'logs' === $current_tab ) : ?>
 
                 <h2><?php esc_html_e( 'Journal de logs récents (100 derniers événements)', 'presellia-partner-bridge' ); ?></h2>
                 <p class="description" style="margin-bottom:16px;">
