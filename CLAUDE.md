@@ -71,17 +71,19 @@ Convention semver :
 presellia-partner-bridge.php        → bootstrap : constantes, activation hooks, PPB_Plugin::instance()
 includes/
   class-ppb-plugin.php              → loader singleton : require_once + instanciation de tous les modules
-  class-ppb-activator.php           → CREATE TABLE ppb_logs, options par défaut, unschedule cron
-  class-ppb-auth.php                → token/cookie, AJAX validate password/revoke
+  class-ppb-activator.php           → CREATE TABLE ppb_logs/ppb_partner_requests, options par défaut, unschedule cron ; maybe_upgrade() rejoue les migrations sur plugins_loaded si ppb_db_version a changé (une mise à jour en place ne redéclenche jamais register_activation_hook)
+  class-ppb-auth.php                → token/cookie, AJAX validate password/revoke, authenticate_portal() (REST headless, rate-limité)
   class-ppb-logger.php              → table ppb_logs, méthodes statiques info/warning/error
+  class-ppb-requests.php            → table ppb_partner_requests (demandes d'accès portail headless), create/list/update_status
+  class-ppb-rate-limiter.php        → limiteur de débit générique par IP/bucket (transients), utilisé par /portal/registration — indépendant du limiteur dédié au login dans PPB_Auth
   class-ppb-pricing.php             → meta _ppb_partner_price, hook wc_before_calculate_totals, get_catalog()
   class-ppb-portal.php              → shortcode [ppb_portal] (espace revendeur) + [ppb_catalog] (catalogue public), AJAX catalog + checkout
   class-ppb-cron.php                → cron ppb_weekly_cleanup : purge automatique des logs
   api/
-    class-ppb-api.php               → REST endpoints ppb/v1/* (auth: X-PPB-API-Key)
+    class-ppb-api.php               → REST endpoints ppb/v1/* (admin : X-PPB-API-Key ; portail headless /portal/* : token ou public selon la route, CORS scopé à ppb_portal_cors_origin)
 admin/
   class-ppb-admin.php               → bulk price editor, metaboxes produit/variation
-  class-ppb-settings.php            → réglages (onglets : Portail Partenaire / Catalogue Public), dashboard rapide, gestion mdp/tokens/logs
+  class-ppb-settings.php            → réglages (onglets : Portail Partenaire / Catalogue Public / Demandes d'accès), dashboard rapide, gestion mdp/tokens/logs
 assets/
   css/ppb-portal.css                → styles page portail [ppb_portal] et catalogue public [ppb_catalog]
   css/ppb-admin.css                 → styles pages admin
@@ -115,6 +117,27 @@ assets/
 | POST | `/wp-json/ppb/v1/tokens/revoke-all` | Révoque tous les tokens |
 
 Header d'authentification : `X-PPB-API-Key: {clé depuis les réglages PPB}`
+
+---
+
+## API REST portail headless — endpoints disponibles
+
+Consommés par le repo séparé `presellia-partner-portal` (SPA React sur une autre origine). Auth par mot de passe partagé → token, pas de clé API admin.
+
+**CORS — deux couches, ne pas confondre :**
+1. WordPress core ajoute par défaut `Access-Control-Allow-Origin: <origine de la requête>` (reflétée) sur **toutes** les routes REST via `rest_send_cors_headers()` (`rest_api_init`) — donc une route non listée ci-dessous fonctionnerait quand même cross-origin, mais depuis **n'importe quelle origine**.
+2. `PPB_Api::add_cors_headers()` (sur `rest_pre_serve_request`) **écrase** ce header par défaut, mais uniquement pour les routes sous `/ppb/v1/portal/*` — restreint alors à la seule origine configurée dans `ppb_portal_cors_origin`. `header()` remplace un header du même nom par défaut en PHP, d'où l'écrasement.
+
+Conséquence pratique : toute route qui expose des données sensibles (prix partenaires, commandes, ou qui écrit en base comme `/registration`) doit être placée sous `/portal/` pour bénéficier de cette restriction — sinon elle reste accessible depuis n'importe quel site web via le défaut permissif de WP, pas bloquée. `/checkout/prepare` est le seul endpoint headless historique laissé hors `/portal/` (accepte un panier à préparer, ne renvoie aucune donnée partenaire sensible — risque jugé acceptable).
+
+| Méthode | Endpoint | Auth |
+|---|---|---|
+| POST | `/wp-json/ppb/v1/portal/login` | Publique, rate-limitée (PPB_Auth) |
+| GET | `/wp-json/ppb/v1/portal/catalog` | Token |
+| POST | `/wp-json/ppb/v1/checkout/prepare` | Token (dans le body) — hors `/portal/`, CORS par défaut WP (voir ci-dessus) |
+| POST | `/wp-json/ppb/v1/portal/registration` | Publique, rate-limitée (PPB_Rate_Limiter, bucket séparé du login) — file dans Réglages PPB > Demandes d'accès |
+| GET | `/wp-json/ppb/v1/portal/orders` | Token — historique par email, pas d'endpoint public (évite l'énumération) |
+| GET | `/wp-json/ppb/v1/portal/product/{id}/description` | Token |
 
 ---
 
